@@ -197,17 +197,37 @@ if route_again and st.session_state.last_prompt:
     prompt = st.session_state.last_prompt
 
 # ---------------------------------------------------------------------------#
+#  Cached Router instantiation
+# ---------------------------------------------------------------------------#
+
+
+@st.cache_data(ttl=300)
+def get_router() -> Router:
+    """Cache the Router for 5 minutes to avoid reloading the model catalog."""
+    return Router()
+
+
+# ---------------------------------------------------------------------------#
 #  Routing logic
 # ---------------------------------------------------------------------------#
 
 if submit_triggered and prompt:
-    with st.spinner("Routing through model chain..."):
-        start = time.time()
-        try:
-            router = Router()
+    start = time.time()
+    try:
+        with st.status("Routing prompt...", expanded=True) as status:
+            status.update(label="Classifying task...")
             task = classify_task(prompt)
+
+            status.update(label=f"Selecting model for {task.value}...")
+            router = get_router()
+
+            status.update(label="Routing through model chain...")
             result = router.route(prompt)
+
+            status.update(label="Evaluating response...")
             elapsed = time.time() - start
+
+            status.update(label="Done!", state="complete")
 
             # Persist to session state
             st.session_state.last_result = result
@@ -218,9 +238,11 @@ if submit_triggered and prompt:
             # Add to history
             add_to_history(prompt, result, elapsed)
 
-        except Exception as e:
-            st.error(f"Error: {e}")
-            st.stop()
+        st.toast(f"Routed to {result['model']}", icon="✅")
+
+    except Exception as e:
+        st.error(f"Error: {e}")
+        st.stop()
 
 elif submit_triggered and not prompt:
     st.warning("Enter a prompt first.")
