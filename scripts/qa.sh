@@ -13,8 +13,8 @@ uv tool run ruff format --check src/ tests/ scripts/
 echo "PASS"
 echo
 
-echo "=== pytest ==="
-uv run python3 -m pytest tests/ -v
+echo "=== pytest + coverage ==="
+uv run python3 -m pytest tests/ -v --cov=src --cov-report=term-missing --cov-fail-under=80
 echo "PASS"
 echo
 

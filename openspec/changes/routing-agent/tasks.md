@@ -92,3 +92,8 @@
 **Status:** Complete
 **Action:** Replace tier-based select_model with per-category model mapping (math→gemma-4-9b, code→deepseek, reasoning→glm-5p2, creative→gemma-4-26b)
 **Verification:** `pytest tests/test_router.py -v` — 21/21 pass
+
+### T-019: Add test coverage reporting
+**Status:** Complete
+**Action:** Add pytest-cov to QA pipeline with --cov=src --cov-fail-under=80, raise coverage from 74% to 91% with 38 new router tests
+**Verification:** `bash scripts/qa.sh` — 83 tests, 91.49% coverage, threshold 80%
