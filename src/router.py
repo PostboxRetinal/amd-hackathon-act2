@@ -65,15 +65,15 @@ class Router:
     # balancing cost and capability.  The values must match the "name" field
     # in config/models.yaml.
     _TASK_MODEL_MAP: dict[TaskCategory, str] = {
-        TaskCategory.MATH: "gemma-4-9b",  # fast, cheap, good at arithmetic
-        TaskCategory.FACTOID: "gemma-4-9b",  # simple factual recall
-        TaskCategory.CLASSIFICATION: "gemma-4-9b",  # simple task
-        TaskCategory.EXTRACTION: "gemma-4-9b",  # simple task
-        TaskCategory.SUMMARIZATION: "gemma-4-26b",  # needs decent context + quality
-        TaskCategory.CREATIVE: "gemma-4-26b",  # good balance for creative writing
+        TaskCategory.MATH: "gemma-4-26b",  # dedicated deploy, 0 cost per token
+        TaskCategory.FACTOID: "gemma-4-26b",  # dedicated deploy, 0 cost per token
+        TaskCategory.CLASSIFICATION: "gemma-4-26b",  # dedicated deploy, 0 cost per token
+        TaskCategory.EXTRACTION: "gemma-4-26b",  # dedicated deploy, 0 cost per token
+        TaskCategory.SUMMARIZATION: "gemma-4-26b",  # dedicated deploy, 0 cost per token
+        TaskCategory.CREATIVE: "gemma-4-26b",  # dedicated deploy, 0 cost per token
         TaskCategory.CODE: "deepseek-v4-pro",  # strong coder
         TaskCategory.REASONING: "glm-5p2",  # strongest reasoning
-        TaskCategory.UNKNOWN: "gemma-4-9b",  # cheap default
+        TaskCategory.UNKNOWN: "gemma-4-26b",  # dedicated deploy, 0 cost per token
     }
 
     def select_model(self, task: TaskCategory) -> Model:

@@ -50,7 +50,7 @@ class TestSelectModel:
     def test_math(self, router):
         from src.tasks import TaskCategory
 
-        assert router.select_model(TaskCategory.MATH).name == "gemma-4-9b"
+        assert router.select_model(TaskCategory.MATH).name == "gemma-4-26b"
 
     def test_code(self, router):
         from src.tasks import TaskCategory

@@ -21,8 +21,8 @@ models:
   - name: gemma-4-26b
     tier: standard
     provider: fireworks
-    model_id: accounts/fireworks/models/gemma-4-26b-a4b-it
-    cost_per_1k_tokens: 0.0005
+    model_id: accounts/postboxretinal/deployments/txbj700w
+    cost_per_1k_tokens: 0.0
     accuracy_score: 0.91
     context_limit: 32000
 
