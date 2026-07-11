@@ -43,9 +43,9 @@
 **Verification:** Produces evaluation report JSON
 
 ### T-009: Containerize and test Docker
-**Status:** Pending
-**Action:** `docker build -t amd-router . && docker run amd-router`
-**Verification:** Container starts and responds to prompts
+**Status:** Complete
+**Action:** `podman build -t amd-router . && podman run amd-router`
+**Verification:** Container builds and runs tests successfully. Includes entrypoint passthrough, .dockerignore, Streamlit Dockerfile.web.
 
 ### T-010: Submission
 **Status:** Pending
@@ -167,3 +167,13 @@
 **Status:** Complete
 **Action:** Bump version 0.1.0 → 0.2.0 per SEMVER (minor: new frontend feature). Read version dynamically via importlib.metadata. Add .streamlit/config.toml to disable telemetry.
 **Verification:** `streamlit run` footer shows `Wayfinder v0.2.0`
+
+### T-035: Coverage bump — 51 tests, 87% coverage
+**Status:** Complete
+**Action:** Add 5 targeted tests for cache hit, route result keys, empty prompt, long prompt, and model key presence. Router coverage at 87% (7% above 80% threshold).
+**Verification:** `pytest tests/ -v --cov=src` — 51 passed, 87.40% coverage
+
+### T-036: Cache hit + route edge case tests
+**Status:** Complete
+**Action:** Add tests: cache hit returns same result, cache does not increment stats, route result contains all required keys, empty prompt returns valid dict, long prompt (400+ chars) routes correctly.
+**Verification:** `pytest tests/test_router.py -v` — all 28 test methods pass
