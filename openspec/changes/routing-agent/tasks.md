@@ -77,3 +77,18 @@
 **Status:** Complete
 **Action:** Configure GLM 5.2 via OpenRouter (Novita ZDR) for complex coding tasks
 **Verification:** Subagent config validated
+
+### T-016: Add ruff linter and formatter
+**Status:** Complete
+**Action:** Install ruff globally, create pyproject.toml, auto-fix 13 lint errors across 7 files
+**Verification:** `ruff check src/ tests/ scripts/` — 0 errors
+
+### T-017: Add pre-commit QA pipeline
+**Status:** Complete
+**Action:** Create scripts/qa.sh (ruff check + format + pytest), .git/hooks/pre-commit hook, `uv run qa` entry point
+**Verification:** `bash scripts/qa.sh` — all 3 checks pass (ruff, format, pytest 45/45)
+
+### T-018: Implement task-aware routing
+**Status:** Complete
+**Action:** Replace tier-based select_model with per-category model mapping (math→gemma-4-9b, code→deepseek, reasoning→glm-5p2, creative→gemma-4-26b)
+**Verification:** `pytest tests/test_router.py -v` — 21/21 pass
