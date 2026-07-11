@@ -200,7 +200,7 @@ class Router:
     # ------------------------------------------------------------------
 
     def _call(self, model: Model, prompt: str, max_tokens: int = 512) -> tuple[str, int, int]:
-        """Call the model via Fireworks API. Returns (response, prompt_tokens, completion_tokens)."""
+        """Call the model via Fireworks API or local server. Returns (response, prompt_tokens, completion_tokens)."""
         payload = {
             "model": model.model_id,
             "messages": [{"role": "user", "content": prompt}],
@@ -208,24 +208,39 @@ class Router:
             "temperature": 0.1,
         }
 
-        result = subprocess.run(
-            [
-                "curl",
-                "-s",
-                "-X",
-                "POST",
-                "https://api.fireworks.ai/inference/v1/chat/completions",
+        # Build curl command based on provider.
+        if model.provider.lower() == "local":
+            # Local model: model.model_id is the full URL; omit auth header.
+            url = model.model_id
+            headers = ["-H", "Content-Type: application/json"]
+        else:
+            # Fireworks model: use Fireworks endpoint with auth header.
+            url = "https://api.fireworks.ai/inference/v1/chat/completions"
+            headers = [
                 "-H",
                 f"Authorization: Bearer {self.api_key}",
                 "-H",
                 "Content-Type: application/json",
-                "-d",
-                json.dumps(payload),
-            ],
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
+            ]
+
+        try:
+            result = subprocess.run(
+                [
+                    "curl",
+                    "-s",
+                    "-X",
+                    "POST",
+                    url,
+                    *headers,
+                    "-d",
+                    json.dumps(payload),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+        except (subprocess.TimeoutExpired, OSError):
+            return "[ERROR]", 0, 0
 
         try:
             data = json.loads(result.stdout)

@@ -2,13 +2,13 @@
 # Edit this file to add/modify models without touching code.
 
 models:
-  - name: gemma-4-9b-local
+  - name: gemma-4-e4b-local
     tier: cheap
-    provider: vllm
-    model_id: gemma-4-9b-local
+    provider: local
+    model_id: http://localhost:8000/v1/chat/completions
     cost_per_1k_tokens: 0.0
-    accuracy_score: 0.72
-    context_limit: 8192
+    accuracy_score: 0.82
+    context_limit: 16384
 
   - name: gemma-4-9b
     tier: fast
