@@ -266,7 +266,7 @@ if submit_triggered and prompt:
             # Add to history
             add_to_history(prompt, result, elapsed)
 
-        st.toast(f"Routed to {result['model']}", icon="✅")
+        st.toast(f"Routed to {result['model']}", icon="[OK]")
 
     except Exception as e:
         st.error(f"Error: {e}")

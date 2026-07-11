@@ -199,11 +199,11 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
     for entry in data:
         status = entry["Status"]
         if status == "Ready":
-            icon = "✅"
+            icon = "[OK]"
         elif status == "Paused":
-            icon = "⏸️"
+            icon = "[PAUSED]"
         else:
-            icon = "🔴"
+            icon = "[RED]"
 
         st.markdown(
             f"<div style='font-size:13px; padding:2px 0;'>"
