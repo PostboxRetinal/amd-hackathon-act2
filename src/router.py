@@ -85,7 +85,7 @@ class Router:
           - If the recommended model is a local vLLM model that is unavailable,
             fall back to the next suitable model by tier.
         """
-        model_name = self._TASK_MODEL_MAP.get(task, "gemma-4-9b")
+        model_name = self._TASK_MODEL_MAP.get(task, "gemma-4-26b")
         model = self._get_model_by_name(model_name)
 
         # If the recommended model is a local vLLM instance that is not running,
@@ -153,7 +153,7 @@ class Router:
             if response == "[ERROR]" and self._is_local_model(attempt):
                 continue
 
-            tokens = self._count_tokens(response)
+            tokens = prompt_tok + completion_tok
             score = evaluate_response(prompt, response, task)
 
             if score >= 0.7:
@@ -186,6 +186,7 @@ class Router:
         if best is None:
             return {
                 "response": "All models failed",
+                "model": "none",
                 "tokens": 0,
                 "cost": 0.0,
                 "accuracy_score": 0.0,
@@ -261,7 +262,7 @@ class Router:
     @staticmethod
     def _is_local_model(model: Model) -> bool:
         """Return True if the model is served by a local vLLM instance."""
-        return model.provider.lower() == "vllm"
+        return model.provider.lower() in ("vllm", "local")
 
     def _is_local_available(self) -> bool:
         """

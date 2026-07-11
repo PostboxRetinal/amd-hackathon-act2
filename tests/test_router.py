@@ -1,7 +1,7 @@
 """Tests for Router class — model selection, fallback chain, caching, stats, and CLI."""
 
 import sys
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -50,7 +50,8 @@ class TestSelectModel:
     def test_math(self, router):
         from src.tasks import TaskCategory
 
-        assert router.select_model(TaskCategory.MATH).name == "gemma-4-e4b-local"
+        with patch.object(router, "_is_local_available", return_value=True):
+            assert router.select_model(TaskCategory.MATH).name == "gemma-4-e4b-local"
 
     def test_code(self, router):
         from src.tasks import TaskCategory

@@ -127,3 +127,13 @@
 **Status:** Complete
 **Action:** Replace cryptic `[FB]` with clear Status column (PASS/FALLBACK), add live progress per prompt to stderr, add Gemma Prize eligibility footer. Improve token display formatting.
 **Verification:** `uv run python scripts/evaluate.py` — shows live progress, Status column, Gemma Prize footer. Final benchmark: 9/14 Gemma, $0.002111, 100% acc.
+
+### T-026: Docker containerization
+**Status:** Complete
+**Action:** Fix Dockerfile: add config/, tests/, pyproject.toml, uv.lock. Use uv sync --frozen. Add UV_LINK_MODE=copy. Fix entrypoint.sh pipe mode (src.router to src). Verification: `docker run --rm amd-router uv run pytest tests/ -v` — 37 passed.
+**Verification:** `docker build -t amd-router . && docker run --rm amd-router uv run pytest tests/ -v`
+
+### T-027: Submission to lablab.ai
+**Status:** Pending
+**Action:** Submit project with description, tags, and GitHub link to lablab.ai for AMD Hackathon ACT II Track 1.
+**Verification:** Submitted before Jul 12 3PM PT deadline

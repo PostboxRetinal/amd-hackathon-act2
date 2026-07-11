@@ -1,7 +1,4 @@
 #!/bin/bash
-# Entrypoint for the routing agent container.
-# Reads prompts from stdin and routes through Fireworks.
-
 set -e
 
 echo "=== Hybrid Token-Efficient Routing Agent ==="
@@ -14,8 +11,8 @@ if [ -t 0 ]; then
         uv run python -m src "$prompt"
     done
 else
-    # Pipe mode
+    # Pipe/batch mode
     while read -r line; do
-        uv run python -m src.router "$line"
+        uv run python -m src "$line"
     done
 fi

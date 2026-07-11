@@ -10,13 +10,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Python deps via uv
-COPY requirements.txt .
-RUN uv pip install --system -r requirements.txt
+# Set link mode to avoid cross-filesystem warning
+ENV UV_LINK_MODE=copy
 
-# Code
+# Copy project config
+COPY pyproject.toml .
+COPY uv.lock .
+
+# Install deps
+RUN uv sync --frozen
+
+# Copy source code
 COPY src/ src/
 COPY scripts/ scripts/
+COPY config/ config/
+COPY tests/ tests/
 COPY entrypoint.sh .
 
 RUN chmod +x entrypoint.sh

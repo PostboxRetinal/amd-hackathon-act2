@@ -81,7 +81,7 @@ uv venv -p 3.10
 source .venv/bin/activate
 
 # Install dependencies
-uv pip install -r requirements.txt
+uv sync
 
 # Set your API key
 export FIREWORKS_API_KEY="fw_..."
@@ -127,7 +127,7 @@ uv run python3 -m pytest tests/ -v
 | Accuracy | **100%** |
 | Fallback rate | 2/14 |
 | Evaluator threshold | 0.7 |
-| GPU hours consumed | 2.54 (NVIDIA H200 141GB x4) |
+| GPU hours consumed | 2.54 (AMD GPU) |
 | Total GPU cost | $71.12 @ $28/h |
 | P50 latency | 1,000 ms |
 | P99 latency | 11,800 ms |
@@ -149,10 +149,10 @@ The router uses a **fallback chain**: it starts with the cheapest model tier and
 
 - **Python 3.10** — Core runtime
 - **uv** — Dependency management
-- **Fireworks AI** — Serverless cloud inference (5 models)
-- **vLLM** — Local model serving on AMD GPUs
+- **Fireworks AI** — Serverless cloud inference (6 models)
+- **vLLM** — Local model serving on AMD GPU
 - **ROCm 7.2** — AMD GPU compute platform
-- **Gemma 4** — Google DeepMind models (9B/26B/31B)
+- **Gemma 4** — Google DeepMind models (26B/31B)
 - **Pytest** — Testing framework
 - **Ruff** — Python linter and formatter
 
