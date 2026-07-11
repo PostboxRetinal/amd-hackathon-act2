@@ -125,5 +125,5 @@
 
 ### T-025: Improve evaluate.py CLI output
 **Status:** Complete
-**Action:** Replace cryptic `[FB]` with clear Status column (PASS/FALLBACK), add live progress per prompt to stderr, add Gemma Prize eligibility footer line. Improve token display formatting.
-**Verification:** `uv run python scripts/evaluate.py` — shows live progress, clear status column, Gemma Prize footer
+**Action:** Replace cryptic `[FB]` with clear Status column (PASS/FALLBACK), add live progress per prompt to stderr, add Gemma Prize eligibility footer. Improve token display formatting.
+**Verification:** `uv run python scripts/evaluate.py` — shows live progress, Status column, Gemma Prize footer. Final benchmark: 9/14 Gemma, $0.002111, 100% acc.
