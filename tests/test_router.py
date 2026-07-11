@@ -42,8 +42,8 @@ class TestPick:
     def test_cheap(self, router):
         assert router._pick(ModelTier.CHEAP).tier == ModelTier.CHEAP
 
-    def test_fast(self, router):
-        assert router._pick(ModelTier.FAST).tier == ModelTier.FAST
+    def test_standard(self, router):
+        assert router._pick(ModelTier.STANDARD).tier == ModelTier.STANDARD
 
 
 class TestSelectModel:
@@ -85,7 +85,7 @@ class TestCall:
                 returncode=0,
             ),
         )
-        m = router._pick(ModelTier.FAST)
+        m = router._pick(ModelTier.STANDARD)
         r, pt, ct = router._call(m, "hi")
         assert r == "ok"
 
@@ -93,7 +93,7 @@ class TestCall:
         monkeypatch.setattr(
             "subprocess.run", lambda *a, **kw: MagicMock(stdout="bad", returncode=0)
         )
-        m = router._pick(ModelTier.FAST)
+        m = router._pick(ModelTier.STANDARD)
         r, pt, ct = router._call(m, "hi")
         assert r == "[ERROR: Failed to parse Fireworks API response]"
 
@@ -148,10 +148,10 @@ class TestMain:
         main()
 
 
-def test_missing_api_key_returns_descriptive_error():
+def test_missing_api_key_returns_descriptive_error(router):
     """Router with empty API key returns descriptive error."""
     r = Router(api_key="")
-    m = r._pick(ModelTier.FAST)
+    m = r._pick(ModelTier.STANDARD)
     resp, pt, ct = r._call(m, "hello")
     assert "FIREWORKS_API_KEY" in resp
     assert resp.startswith("[ERROR")
@@ -165,7 +165,7 @@ def test_timeout_returns_error(router, monkeypatch):
         raise subprocess.TimeoutExpired("cmd", 60)
 
     monkeypatch.setattr("subprocess.run", _raise)
-    m = router._pick(ModelTier.FAST)
+    m = router._pick(ModelTier.STANDARD)
     resp, pt, ct = router._call(m, "hello")
     assert "timed out" in resp
     assert resp.startswith("[ERROR")
@@ -178,7 +178,7 @@ def test_oserror_returns_error(router, monkeypatch):
         raise OSError(111, "Connection refused")
 
     monkeypatch.setattr("subprocess.run", _raise)
-    m = router._pick(ModelTier.FAST)
+    m = router._pick(ModelTier.STANDARD)
     resp, pt, ct = router._call(m, "hello")
     assert "Connection refused" in resp
     assert resp.startswith("[ERROR")

@@ -12,6 +12,15 @@ import streamlit as st
 # Ensure src/ is importable
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+# Read version from package metadata (SEMVER)
+_VERSIONS = {"wayfinder": "0.2.0"}
+try:
+    from importlib.metadata import version as _pkg_ver
+    _VERSIONS["wayfinder"] = _pkg_ver("wayfinder")
+except Exception:
+    pass
+VERSION = _VERSIONS.get("wayfinder", "0.2.0")
+
 from src.router import Router
 from src.tasks import TaskCategory, classify_task
 
@@ -20,6 +29,7 @@ from app.utils import (
     display_as_cli,
     display_metrics,
     display_model_details,
+    display_model_pool,
     display_response,
     task_badge,
 )
@@ -52,6 +62,17 @@ if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = True
 
 # ---------------------------------------------------------------------------#
+#  Cached Router instantiation
+# ---------------------------------------------------------------------------#
+
+
+@st.cache_data(ttl=300)
+def get_router() -> Router:
+    """Cache the Router for 5 minutes to avoid reloading the model catalog."""
+    return Router()
+
+
+# ---------------------------------------------------------------------------#
 #  Sidebar
 # ---------------------------------------------------------------------------#
 
@@ -69,6 +90,13 @@ with st.sidebar:
         value=st.session_state.dark_mode,
         help="Toggle dark/light theme styling",
     )
+
+    st.divider()
+
+    # Model pool
+    if api_key:
+        router = get_router()
+        display_model_pool(router, api_key)
 
     st.divider()
 
@@ -290,6 +318,6 @@ if result is not None:
 
 st.divider()
 st.caption(
-    "Wayfinder v0.1 -- AMD Hackathon ACT II Track 1 -- "
-    "Eligible for Gemma Prize"
+    f"Wayfinder v{VERSION} -- AMD Hackathon ACT II Track 1 -- "
+    "Gemma Prize eligible (requires active Gemma 4 deploy or local llama.cpp server)"
 )

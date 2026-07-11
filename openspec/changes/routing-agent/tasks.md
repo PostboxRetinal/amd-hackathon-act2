@@ -128,12 +128,42 @@
 **Action:** Replace cryptic `[FB]` with clear Status column (PASS/FALLBACK), add live progress per prompt to stderr, add Gemma Prize eligibility footer. Improve token display formatting.
 **Verification:** `uv run python scripts/evaluate.py` — shows live progress, Status column, Gemma Prize footer. Final benchmark: 9/14 Gemma, $0.002111, 100% acc.
 
-### T-026: Docker containerization
-**Status:** Complete
-**Action:** Fix Dockerfile: add config/, tests/, pyproject.toml, uv.lock. Use uv sync --frozen. Add UV_LINK_MODE=copy. Fix entrypoint.sh pipe mode (src.router to src). Verification: `docker run --rm amd-router uv run pytest tests/ -v` — 37 passed.
-**Verification:** `docker build -t amd-router . && docker run --rm amd-router uv run pytest tests/ -v`
-
 ### T-027: Submission to lablab.ai
 **Status:** Pending
 **Action:** Submit project with description, tags, and GitHub link to lablab.ai for AMD Hackathon ACT II Track 1.
 **Verification:** Submitted before Jul 12 3PM PT deadline
+
+### T-028: Purge gemma-4-9b, migrate tests to STANDARD tier
+**Status:** Complete
+**Action:** Remove gemma-4-9b (model never existed on Fireworks). Migrate all test references from FAST tier to STANDARD. Update config/models.yaml and router.
+**Verification:** `pytest tests/ -v` — 46 passed, no FAST references remain
+
+### T-029: Descriptive error messages in _call()
+**Status:** Complete
+**Action:** Replace generic `[ERROR]` with descriptive messages: missing API key, timeout, connection refused, parse errors, API errors. Include model URL context for local models.
+**Verification:** `curl without API key` → `[ERROR: FIREWORKS_API_KEY not set...]` instead of `[ERROR]`
+
+### T-030: Streamlit frontend (Wayfinder Web UI)
+**Status:** Complete
+**Action:** Build complete Streamlit web interface in app/ directory. CLI-style output, live routing status with st.status(), st.toast() notifications, @st.cache_data for Router, dark mode, query history, Ctrl+Enter shortcut. Dockerfile.web for containerized deployment.
+**Verification:** `uv run streamlit run app/main.py` — launches without error, all features functional
+
+### T-031: Evaluator [ERROR: prefix detection
+**Status:** Complete
+**Action:** Change evaluator from exact `"[ERROR]"` match to `startswith("[ERROR")`. All new descriptive error messages are properly caught and scored 0.0.
+**Verification:** `pytest tests/test_evaluator.py -v` — all pass
+
+### T-032: Model pool + Refresh from Fireworks
+**Status:** Complete
+**Action:** Add sidebar Model Pool showing all configured models with status (Ready/Paused/Down) and pricing. Add Refresh button that fetches live pricing from Fireworks API for Wayfinder's models only.
+**Verification:** Streamlit sidebar shows model list + Refresh button fetches live data
+
+### T-033: Code review fixes (6 items)
+**Status:** Complete
+**Action:** `_is_local_model()` accepts both `vllm` and `local`. `best is None` path includes `"model"` key. Cost uses actual API token count. `.dockerignore` created. README updated with Model Requirements section. Empty dead files removed.
+**Verification:** `pytest tests/ -v --cov=src` — 46 passed, 86% coverage
+
+### T-034: SEMVER + dynamic versioning
+**Status:** Complete
+**Action:** Bump version 0.1.0 → 0.2.0 per SEMVER (minor: new frontend feature). Read version dynamically via importlib.metadata. Add .streamlit/config.toml to disable telemetry.
+**Verification:** `streamlit run` footer shows `Wayfinder v0.2.0`
