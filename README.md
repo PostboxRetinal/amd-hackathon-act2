@@ -183,7 +183,7 @@ Runs the full evaluation suite across all categories and models, producing a JSO
 uv run python3 -m pytest tests/ -v
 ```
 
-37 tests covering task classification, model catalog, evaluator, and router logic with 84% code coverage.
+51 tests covering task classification, model catalog, evaluator, and router logic with 87% code coverage.
 
 ### Benchmark Results
 
@@ -219,10 +219,10 @@ The router uses a **fallback chain**: it starts with the cheapest model tier and
 
 - **Python 3.10** — Core runtime
 - **uv** — Dependency management
-- **Fireworks AI** — Serverless cloud inference (6 models)
+- **Fireworks AI** — Serverless cloud inference (5 models)
 - **vLLM** — Local model serving on AMD GPU
 - **ROCm 7.2** — AMD GPU compute platform
-- **Gemma 4** — Google DeepMind models (9B/26B/31B)
+- **Gemma 4** — Google DeepMind models (E4B/26B/31B)
 - **Pytest** — Testing framework
 - **Ruff** — Python linter and formatter
 
@@ -241,7 +241,7 @@ bash scripts/qa.sh
 The QA pipeline checks:
 1. `ruff check` — Lint errors, unused imports, naming conventions
 2. `ruff format --check` — Code formatting consistency
-3. `pytest --cov=src` — 37 tests, 85% coverage (threshold: 80%)
+3. `pytest --cov=src` — 51 tests, 87% coverage (threshold: 80%)
 
 If any check fails, the commit is blocked. To bypass (not recommended):
 ```bash

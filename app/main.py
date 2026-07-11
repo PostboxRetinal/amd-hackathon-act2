@@ -13,7 +13,7 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Read version from package metadata (SEMVER)
-_VERSIONS = {"wayfinder": "0.2.0"}
+_VERSIONS = {"wayfinder": "0.4.0"}
 try:
     from importlib.metadata import version as _pkg_ver
     _VERSIONS["wayfinder"] = _pkg_ver("wayfinder")
@@ -222,16 +222,6 @@ submit_triggered = routed or route_again
 # If "Route Again" is clicked, use the last prompt
 if route_again and st.session_state.last_prompt:
     prompt = st.session_state.last_prompt
-
-# ---------------------------------------------------------------------------#
-#  Router instantiation (re-declared for routing section)
-# ---------------------------------------------------------------------------#
-
-
-def get_router() -> Router:
-    """Build a fresh Router so it picks up the current FIREWORKS_API_KEY."""
-    return Router()
-
 
 # ---------------------------------------------------------------------------#
 #  Routing logic
