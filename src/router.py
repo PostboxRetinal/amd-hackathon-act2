@@ -230,11 +230,13 @@ class Router:
         try:
             data = json.loads(result.stdout)
             content = data["choices"][0]["message"]["content"]
+            if content is None:
+                return "[ERROR]", 0, 0
             usage = data.get("usage", {})
             prompt_tokens = usage.get("prompt_tokens", 0)
             completion_tokens = usage.get("completion_tokens", 0)
             return content, prompt_tokens, completion_tokens
-        except (KeyError, json.JSONDecodeError):
+        except (KeyError, json.JSONDecodeError, TypeError, AttributeError):
             return "[ERROR]", 0, 0
 
     # ------------------------------------------------------------------

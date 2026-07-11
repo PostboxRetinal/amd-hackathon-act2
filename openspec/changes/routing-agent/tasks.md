@@ -97,3 +97,13 @@
 **Status:** Complete
 **Action:** Add pytest-cov to QA pipeline with --cov=src --cov-fail-under=80
 **Verification:** `bash scripts/qa.sh` — 37 tests, 84.68% coverage, threshold 80%
+
+### T-020: Deploy Gemma 4 26B on Fireworks dedicated GPU
+**Status:** Complete
+**Action:** Deploy Gemma 4 26B A4B IT as dedicated endpoint (NVIDIA H200 141GB, $28/h, autoscaling 0-1). Update config/models.yaml with model ID accounts/postboxretinal/deployments/txbj700w. Route 6/9 task categories to Gemma 4 for Gemma Prize eligibility.
+**Verification:** `uv run python scripts/evaluate.py` — Gemma 4 handles math, factoid, classification, extraction, summarization, creative, unknown
+
+### T-021: Fix NoneType crash in _call() for null content
+**Status:** Complete
+**Action:** Add None content check in router._call() to return [ERROR] when API returns content:null. Add TypeError and AttributeError to exception handler.
+**Verification:** `pytest tests/ -v` — 37 passed, 84% coverage
