@@ -146,3 +146,91 @@ class TestMain:
         from src.router import main
 
         main()
+
+
+def test_missing_api_key_returns_descriptive_error():
+    """Router with empty API key returns descriptive error."""
+    r = Router(api_key="")
+    m = r._pick(ModelTier.FAST)
+    resp, pt, ct = r._call(m, "hello")
+    assert "FIREWORKS_API_KEY" in resp
+    assert resp.startswith("[ERROR")
+
+
+def test_timeout_returns_error(router, monkeypatch):
+    """TimeoutExpired returns descriptive error."""
+    import subprocess
+
+    def _raise(*a, **kw):
+        raise subprocess.TimeoutExpired("cmd", 60)
+
+    monkeypatch.setattr("subprocess.run", _raise)
+    m = router._pick(ModelTier.FAST)
+    resp, pt, ct = router._call(m, "hello")
+    assert "timed out" in resp
+    assert resp.startswith("[ERROR")
+
+
+def test_oserror_returns_error(router, monkeypatch):
+    """OSError returns descriptive error."""
+
+    def _raise(*a, **kw):
+        raise OSError(111, "Connection refused")
+
+    monkeypatch.setattr("subprocess.run", _raise)
+    m = router._pick(ModelTier.FAST)
+    resp, pt, ct = router._call(m, "hello")
+    assert "Connection refused" in resp
+    assert resp.startswith("[ERROR")
+
+
+def test_cheapest_fireworks_excludes_local(router):
+    """_cheapest_available_fireworks_model excludes local models."""
+    m = router._cheapest_available_fireworks_model()
+    assert m is not None
+    assert m.provider.lower() != "local"
+
+
+def test_all_returns_models(router):
+    """_all returns all models from catalog."""
+    all_m = router._all()
+    assert len(all_m) >= 5
+    assert any(m.name == "deepseek-v4-pro" for m in all_m)
+
+
+def test_route_without_api_key_returns_error():
+    """Router without API key returns error for Fireworks call."""
+    r = Router(api_key="")
+
+    result = r.route("hello")
+    assert "FIREWORKS_API_KEY" in result["response"]
+
+
+def test_cache_hit_returns_same_result(router, monkeypatch):
+    """Second identical call returns cached result."""
+    mock_stdout = (
+        '{"choices":[{"message":{"content":"hello"}}],'
+        '"usage":{"prompt_tokens":1,"completion_tokens":1}}'
+    )
+    monkeypatch.setattr(
+        "subprocess.run",
+        lambda *a, **kw: MagicMock(stdout=mock_stdout, returncode=0),
+    )
+    r1 = router.route("hello")
+    r2 = router.route("hello")
+    assert r1["response"] == r2["response"]
+    assert r2["model"] == r1["model"]
+
+
+def test_get_model_by_name_returns_model(router):
+    """_get_model_by_name returns model for known name."""
+    m = router._get_model_by_name("deepseek-v4-pro")
+    assert m is not None
+    assert m.name == "deepseek-v4-pro"
+
+
+def test_get_model_by_name_fallback(router):
+    """_get_model_by_name returns first catalog model for unknown name."""
+    m = router._get_model_by_name("nonexistent-model-xyz")
+    assert m is not None
+    assert isinstance(m.name, str)

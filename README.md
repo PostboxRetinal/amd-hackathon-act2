@@ -8,7 +8,7 @@ An intelligent routing agent that selects the cheapest available model for every
 
 The router supports both **Fireworks AI** (serverless cloud inference) and **vLLM** (local AMD GPU serving). Local models cost **0 Fireworks tokens** and are preferred when available; the router gracefully skips them when they're down.
 
-Eligible for the **$1,000 Gemma Prize** with **9/14 prompts** routed through Gemma 4 26B (dedicated H200 GPU, autoscaling 0-1).
+Eligible for the **$1,000 Gemma Prize** — requires active Gemma 4 dedicated deployment or local llama.cpp server.
 
 ## Architecture
 
@@ -60,6 +60,26 @@ Score ≥ 0.7?
 | DeepSeek V4 Pro | STANDARD | Fireworks | $0.0015 |
 | GLM 5.2 | PREMIUM | Fireworks | $0.0014 |
 | Gemma 4 26B (dedicated H200) | CHEAP | Fireworks Deploy | $28/h (GPU) |
+
+## Model Requirements
+
+Some models require additional setup:
+
+| Model | Requirement | Cost |
+|---|---|---|
+| `gemma-4-e4b-local` | llama.cpp server on `localhost:8000` | 0 FW tokens (local GPU) |
+| `gemma-4-26b` (dedicated) | Fireworks deploy active (dashboard) | $28/h GPU |
+| `gemma-4-31b` (dedicated) | Fireworks deploy active (dashboard) | $28/h GPU |
+
+**Dedicated deployments** must be activated via the Fireworks dashboard. When paused (0 replicas), the router automatically falls back to serverless models (deepseek-v4-pro, glm-5p2).
+
+**Local models** require a running llama.cpp server:
+```bash
+python3 -m llama_cpp.server \
+  --model /path/to/gemma-4-E4B-it-Q4_K_M.gguf \
+  --n_gpu_layers -1 \
+  --port 8000
+```
 
 ## Quick Start
 
@@ -152,7 +172,7 @@ The router uses a **fallback chain**: it starts with the cheapest model tier and
 - **Fireworks AI** — Serverless cloud inference (6 models)
 - **vLLM** — Local model serving on AMD GPU
 - **ROCm 7.2** — AMD GPU compute platform
-- **Gemma 4** — Google DeepMind models (26B/31B)
+- **Gemma 4** — Google DeepMind models (9B/26B/31B)
 - **Pytest** — Testing framework
 - **Ruff** — Python linter and formatter
 
