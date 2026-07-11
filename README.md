@@ -1,25 +1,76 @@
-# Wayfinder — Hybrid Token-Efficient Routing Agent
+<div align="center">
+
+```text
+██╗    ██╗ █████╗ ██╗   ██╗███████╗██╗███╗   ██╗██████╗ ███████╗██████╗ 
+██║    ██║██╔══██╗╚██╗ ██╔╝██╔════╝██║████╗  ██║██╔══██╗██╔════╝██╔══██╗
+██║ █╗ ██║███████║ ╚████╔╝ █████╗  ██║██╔██╗ ██║██║  ██║█████╗  ██████╔╝
+██║███╗██║██╔══██║  ╚██╔╝  ██╔══╝  ██║██║╚██╗██║██║  ██║██╔══╝  ██╔══██╗
+╚███╔███╔╝██║  ██║   ██║   ██║     ██║██║ ╚████║██████╔╝███████╗██║  ██║
+ ╚══╝╚══╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝     ╚═╝╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝
+```
+
+**Hybrid Token-Efficient Routing Agent**
+
+<sub>AMD Developer Hackathon: ACT II -- Track 1</sub>
+
+</div>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/python-3.10%2B-blue?logo=python" />
   <img src="https://img.shields.io/badge/tests-51%20passed-brightgreen" />
   <img src="https://img.shields.io/badge/coverage-87%25-green" />
   <img src="https://img.shields.io/badge/version-0.4.0-blue" />
-  <img src="https://img.shields.io/badge/license-MIT-purple" />
   <img src="https://img.shields.io/badge/Gemma%20Prize-Eligible-gold" />
-  <img src="https://img.shields.io/badge/Streamlit-1.59-red?logo=streamlit" />
-  <img src="https://img.shields.io/badge/Fireworks%20AI-API-orange" />
 </p>
 
 > AMD Developer Hackathon: ACT II — Track 1
 
-## Overview
+## Features
+
+<table>
+<tr>
+<td width="33%">
+<h3>Task-Aware Routing</h3>
+<p>Classifies prompts into 9 categories (MATH, CODE, REASONING, FACTOID, CLASSIFICATION, SUMMARIZATION, EXTRACTION, CREATIVE, UNKNOWN) and routes to the optimal model.</p>
+</td>
+<td width="33%">
+<h3>Token Efficient</h3>
+<p>Cheapest model first with automatic fallback. Local Gemma 4 E4B uses 0 Fireworks tokens. Task-aware model selection reduces cost.</p>
+</td>
+<td width="33%">
+<h3>100% Accuracy</h3>
+<p>14/14 benchmark prompts correct at $0.002 total cost. 51 tests with 87% code coverage and pre-commit QA pipeline.</p>
+</td>
+</tr>
+<tr>
+<td width="33%">
+<h3>Live Pricing</h3>
+<p>Real-time model pricing from Fireworks API via Refresh button. Sortable interactive table with UP/SETUP/DOWN status indicators.</p>
+</td>
+<td width="33%">
+<h3>Streamlit UI</h3>
+<p>Full web interface with CLI-style output, query history, dark mode, Model Pool sidebar, Ctrl+Enter shortcut, and live routing status.</p>
+</td>
+<td width="33%">
+<h3>Dockerized</h3>
+<p>Podman/Docker container with entrypoint passthrough. Separate Dockerfile.web for Streamlit UI. uv-based dependency management.</p>
+</td>
+</tr>
+</table>
 
 An intelligent routing agent that selects the cheapest available model for every task, minimizing token usage without sacrificing accuracy. It classifies tasks by type, runs inference on the cheapest suitable model, evaluates response quality, and falls back to larger models only when necessary.
 
 The router supports both **Fireworks AI** (serverless cloud inference) and **vLLM** (local AMD GPU serving). Local models cost **0 Fireworks tokens** and are preferred when available; the router gracefully skips them when they're down.
 
 Eligible for the **$1,000 Gemma Prize** — requires active Gemma 4 dedicated deployment or local llama.cpp server.
+
+## Built With
+
+![Python](https://img.shields.io/badge/Python-3.10-3776AB?logo=python&style=for-the-badge)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.59-FF4B4B?logo=streamlit&style=for-the-badge)
+![Fireworks AI](https://img.shields.io/badge/Fireworks_AI-API-orange?style=for-the-badge)
+![Podman](https://img.shields.io/badge/Podman-Container-892CA0?logo=podman&style=for-the-badge)
+![uv](https://img.shields.io/badge/uv-Package_Manager-4051b5?style=for-the-badge)
+![GitHub](https://img.shields.io/badge/GitHub-Repo-181717?logo=github&style=for-the-badge)
 
 ## Architecture
 
