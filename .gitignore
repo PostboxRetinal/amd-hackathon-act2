@@ -23,3 +23,6 @@ Thumbs.db
 
 # Project specific
 *.tar.gz
+
+# Agent cached files
+.hermes

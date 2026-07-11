@@ -11,6 +11,10 @@ def evaluate_response(prompt: str, response: str, task: TaskCategory) -> float:
     if not response or len(response.strip()) < 1:
         return 0.0
 
+    # Detect API-level errors immediately
+    if response.strip() == "[ERROR]":
+        return 0.0
+
     # Single-digit answers are valid for math
     if task == TaskCategory.MATH and response.strip().isdigit():
         return 1.0
@@ -21,7 +25,7 @@ def evaluate_response(prompt: str, response: str, task: TaskCategory) -> float:
     refusal = [
         "cannot", "sorry", "i'm sorry", "i cannot",
         "i don't know", "as an ai", "not able to",
-        "unable to", "do not have",
+        "unable to", "do not have", "error",
     ]
     for phrase in refusal:
         if phrase in response.lower():
@@ -34,13 +38,13 @@ def evaluate_response(prompt: str, response: str, task: TaskCategory) -> float:
 
     # Code should contain code
     if task == TaskCategory.CODE:
-        if "```" not in response and "def " not in response:
-            score -= 0.3
+        if "```" not in response and "def " not in response and "function" not in response:
+            score -= 0.4
 
-    # Math should contain numbers
+    # Math should contain numbers or show work
     if task == TaskCategory.MATH:
         if not any(c.isdigit() for c in response):
-            score -= 0.3
+            score -= 0.4
 
     # Short responses are OK for math and factoid
     if task not in (TaskCategory.MATH, TaskCategory.FACTOID) and len(response.split()) < 3:

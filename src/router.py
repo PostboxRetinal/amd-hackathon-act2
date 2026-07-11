@@ -1,12 +1,30 @@
 import hashlib
 import json
 import os
+import socket
 import subprocess
 from typing import Optional
 
 from src.models import Model, ModelTier
 from src.tasks import TaskCategory, classify_task
 from src.evaluator import evaluate_response
+
+# Per-category max_tokens — smaller for concise tasks, larger for code/reasoning.
+MAX_TOKENS_BY_CATEGORY: dict[TaskCategory, int] = {
+    TaskCategory.FACTOID: 100,
+    TaskCategory.MATH: 150,
+    TaskCategory.CODE: 1024,
+    TaskCategory.REASONING: 1024,
+    TaskCategory.CLASSIFICATION: 256,
+    TaskCategory.EXTRACTION: 512,
+    TaskCategory.SUMMARIZATION: 512,
+    TaskCategory.CREATIVE: 512,
+    TaskCategory.UNKNOWN: 512,
+}
+
+# Default vLLM endpoint for health-check probing.
+_VLLM_HOST = os.environ.get("VLLM_HOST", "localhost")
+_VLLM_PORT = int(os.environ.get("VLLM_PORT", "8000"))
 
 
 class Router:
@@ -24,6 +42,9 @@ class Router:
             "cost": 0.0,
         }
         self.cache: dict[str, dict] = {}
+        # Cache local-availability result so we only probe once per session.
+        self._local_checked: bool = False
+        self._local_available: bool = False
 
     # ------------------------------------------------------------------
     #  Public helpers (used by tests)
@@ -81,6 +102,7 @@ class Router:
 
         task = classify_task(prompt)
         model = self.select_model(task)
+        max_tokens = MAX_TOKENS_BY_CATEGORY.get(task, 512)
 
         # Cache hit on cheapest model?
         cache_key = hashlib.sha256(prompt.encode()).hexdigest()[:16]
@@ -91,7 +113,19 @@ class Router:
         best = None
 
         for attempt in chain:
-            response, prompt_tok, completion_tok = self._call(attempt, prompt)
+            # Skip vLLM (local) models that are unavailable so we don't
+            # waste time evaluating an [ERROR] placeholder.
+            if self._is_local_model(attempt) and not self._is_local_available():
+                continue
+
+            response, prompt_tok, completion_tok = self._call(
+                attempt, prompt, max_tokens=max_tokens
+            )
+
+            # If a local model returned an error, skip to next tier immediately.
+            if response == "[ERROR]" and self._is_local_model(attempt):
+                continue
+
             tokens = self._count_tokens(response)
             score = evaluate_response(prompt, response, task)
 
@@ -122,6 +156,14 @@ class Router:
             }
 
         # All models failed — return the best of the worst
+        if best is None:
+            return {
+                "response": "All models failed",
+                "tokens": 0,
+                "cost": 0.0,
+                "accuracy_score": 0.0,
+                "fallback_used": True,
+            }
         self.stats["total_tokens"] += best["tokens"]
         self.stats["cost"] += best["cost"]
         return best
@@ -130,12 +172,14 @@ class Router:
     #  Internal helpers
     # ------------------------------------------------------------------
 
-    def _call(self, model: Model, prompt: str) -> tuple[str, int, int]:
+    def _call(
+        self, model: Model, prompt: str, max_tokens: int = 512
+    ) -> tuple[str, int, int]:
         """Call the model via Fireworks API. Returns (response, prompt_tokens, completion_tokens)."""
         payload = {
             "model": model.model_id,
             "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 512,
+            "max_tokens": max_tokens,
             "temperature": 0.1,
         }
 
@@ -161,6 +205,33 @@ class Router:
             return content, prompt_tokens, completion_tokens
         except (KeyError, json.JSONDecodeError):
             return "[ERROR]", 0, 0
+
+    # ------------------------------------------------------------------
+    #  Local model helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _is_local_model(model: Model) -> bool:
+        """Return True if the model is served by a local vLLM instance."""
+        return model.provider.lower() == "vllm"
+
+    def _is_local_available(self) -> bool:
+        """
+        Quick TCP probe to check whether the local vLLM server is running.
+        Result is cached after the first check to avoid repeated probes.
+        """
+        if self._local_checked:
+            return self._local_available
+
+        self._local_checked = True
+        try:
+            with socket.create_connection(
+                (_VLLM_HOST, _VLLM_PORT), timeout=1.0
+            ):
+                self._local_available = True
+        except (OSError, socket.timeout):
+            self._local_available = False
+        return self._local_available
 
     @staticmethod
     def _count_tokens(text: str) -> int:
