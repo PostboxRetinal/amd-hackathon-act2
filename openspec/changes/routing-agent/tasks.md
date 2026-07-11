@@ -194,7 +194,18 @@
 **Verification:** `streamlit run` footer shows `Wayfinder v0.3.0`
 
 ### T-040: Model pool table display with st.dataframe
-**Status:** Pending
+**Status:** Complete
 **Action:** Replace per-row st.markdown() model pool with st.dataframe() using pandas + column_config for sortable columns. Keep Refresh button and timestamp below table.
 **Files:** `app/utils.py`
 **Verification:** Model pool renders as interactive sortable table in sidebar. Refresh still works.
+
+### T-041: Live model status from Fireworks API response
+**Status:** Complete
+**Action:** Replace hardcoded status logic (UP/SETUP/DOWN based on model name) with real data from Fireworks API /v1/models endpoint. Models present in API response = UP, models absent = SETUP, local models = DOWN. Update fetch_fireworks_models() to return available_ids alongside pricing.
+**Files:** `app/utils.py`
+**Verification:** Model Pool statuses reflect actual Fireworks API data after clicking Refresh. Serverless models show UP, paused deploys show SETUP.
+
+### T-042: Version bump 0.3.0 -> 0.4.0
+**Status:** Complete
+**Action:** Increment MINOR version for live API status feature.
+**Verification:** `streamlit run` footer shows `Wayfinder v0.4.0`

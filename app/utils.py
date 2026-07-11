@@ -92,10 +92,11 @@ def display_model_details(result: dict) -> None:
             st.markdown(f"Model `{result['model']}` not found in catalog.")
 
 
-def fetch_fireworks_models(api_key: str) -> dict[str, dict] | None:
+def fetch_fireworks_models(api_key: str) -> dict | None:
     """Fetch pricing for Wayfinder's models from Fireworks AI API.
 
-    Returns a dict keyed by model name with pricing and context info,
+    Returns a dict with 'pricing' (keyed by model name) and
+    'available_ids' (set of expected model IDs found in the API response),
     filtered to only the models we use in routing.
     """
 
@@ -120,19 +121,20 @@ def fetch_fireworks_models(api_key: str) -> dict[str, dict] | None:
     except Exception:
         return None
 
-    result = {}
+    result = {"pricing": {}, "available_ids": set()}
     for m in data:
         mid = m.get("id", "")
         for name, expected_id in WAYFINDER_MODELS.items():
             if mid == expected_id or name in mid:
                 cost = m.get("pricing", {})
-                result[name] = {
+                result["pricing"][name] = {
                     "id": mid,
                     "display_name": m.get("display_name", name),
                     "prompt_cost": cost.get("prompt", 0),
                     "completion_cost": cost.get("completion", 0),
                     "context_length": m.get("context_length", 0),
                 }
+                result["available_ids"].add(expected_id)
                 break
     return result
 
@@ -185,28 +187,32 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
 
     all_models = router._all()
     live = st.session_state.get("live_models", {})
+    live_pricing = live.get("pricing", {})
+    available_ids = live.get("available_ids", set())
 
     rows = []
     for m in all_models:
-        live_info = live.get(m.name, {})
-        prompt_cost = live_info.get("prompt_cost")
-        ctx = live_info.get("context_length")
-
-        # Status determination
+        # Determine status from live API data (if available)
+        live_available = bool(live_pricing)  # True if we have live API data
+        # All Gemma 4 models require manual setup (dedicated deploy or self-hosted)
         if "gemma" in m.name.lower():
             status = "SETUP"
         elif m.provider == "local":
             status = "DOWN"
-        elif "deployments" in m.model_id:
-            status = "SETUP"
+        elif live_available:
+            # Use API response for non-Gemma models
+            status = "UP" if m.model_id in available_ids else "SETUP"
         else:
-            status = "UP"
+            # No live data yet - sensible defaults
+            status = "UP" if "deployments" not in m.model_id else "SETUP"
+
+        # Use live pricing if available
+        live_info = live_pricing.get(m.name, {})
+        prompt_cost = live_info.get("prompt_cost")
+        ctx = live_info.get("context_length")
 
         # Cost
-        if prompt_cost is not None:
-            cost_str = f"${prompt_cost:.4f}"
-        else:
-            cost_str = f"${m.cost_per_1k_tokens:.4f}"
+        cost_str = f"${prompt_cost:.4f}" if prompt_cost else f"${m.cost_per_1k_tokens:.4f}"
 
         # Context length
         ctx_str = f"{ctx:,}" if ctx else f"{m.context_limit:,}"
