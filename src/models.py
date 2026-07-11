@@ -1,5 +1,10 @@
+from __future__ import annotations
+
+import os
+import yaml
 from dataclasses import dataclass
 from enum import Enum
+from typing import Optional
 
 
 class ModelTier(Enum):
@@ -8,83 +13,48 @@ class ModelTier(Enum):
     STANDARD = "standard"
     PREMIUM = "premium"
 
+    @classmethod
+    def from_str(cls, s: str) -> ModelTier:
+        for t in cls:
+            if t.value == s:
+                return t
+        return cls.FAST
+
 
 @dataclass
 class Model:
     name: str
     tier: ModelTier
-    provider: str  # "fireworks" | "vllm"
-    model_id: str  # fireworks model ID or vLLM served name
-    cost_per_1k_tokens: float  # USD
-    accuracy_score: float  # 0-1 estimated baseline
+    provider: str
+    model_id: str
+    cost_per_1k_tokens: float
+    accuracy_score: float
     context_limit: int
 
+    @classmethod
+    def from_dict(cls, d: dict) -> Model:
+        return cls(
+            name=d["name"],
+            tier=ModelTier.from_str(d["tier"]),
+            provider=d["provider"],
+            model_id=d["model_id"],
+            cost_per_1k_tokens=d["cost_per_1k_tokens"],
+            accuracy_score=d["accuracy_score"],
+            context_limit=d.get("context_limit", 16000),
+        )
 
-MODEL_CATALOG: list[Model] = [
-    Model(
-        name="gemma-4-9b",
-        tier=ModelTier.FAST,
-        provider="fireworks",
-        model_id="accounts/fireworks/models/gemma-4-9b-it",
-        cost_per_1k_tokens=0.0002,
-        accuracy_score=0.82,
-        context_limit=16000,
-    ),
-    Model(
-        name="gemma-4-26b",
-        tier=ModelTier.STANDARD,
-        provider="fireworks",
-        model_id="accounts/fireworks/models/gemma-4-26b-a4b-it",
-        cost_per_1k_tokens=0.0005,
-        accuracy_score=0.91,
-        context_limit=32000,
-    ),
-    Model(
-        name="gemma-4-31b",
-        tier=ModelTier.PREMIUM,
-        provider="fireworks",
-        model_id="accounts/fireworks/models/gemma-4-31b-it",
-        cost_per_1k_tokens=0.001,
-        accuracy_score=0.95,
-        context_limit=260000,
-    ),
-    Model(
-        name="deepseek-v4-pro",
-        tier=ModelTier.STANDARD,
-        provider="fireworks",
-        model_id="accounts/fireworks/models/deepseek-v4-pro",
-        cost_per_1k_tokens=0.0015,
-        accuracy_score=0.93,
-        context_limit=1000000,
-    ),
-    Model(
-        name="glm-5p2",
-        tier=ModelTier.PREMIUM,
-        provider="fireworks",
-        model_id="accounts/fireworks/models/glm-5p2",
-        cost_per_1k_tokens=0.0014,
-        accuracy_score=0.94,
-        context_limit=1000000,
-    ),
-    Model(
-        name="gemma-4-26b-local",
-        tier=ModelTier.CHEAP,
-        provider="vllm",
-        model_id="gemma-4-26b",
-        cost_per_1k_tokens=0.0,
-        accuracy_score=0.91,
-        context_limit=32000,
-    ),
-    Model(
-        name="gemma-4-9b-local",
-        tier=ModelTier.CHEAP,
-        provider="vllm",
-        model_id="gemma-4-9b",
-        cost_per_1k_tokens=0.0,
-        accuracy_score=0.82,
-        context_limit=16000,
-    ),
-]
+
+def load_catalog(path: Optional[str] = None) -> list[Model]:
+    """Load model catalog from YAML config file."""
+    if path is None:
+        path = os.path.join(os.path.dirname(__file__), "..", "config", "models.yaml")
+    with open(path) as f:
+        data = yaml.safe_load(f)
+    return [Model.from_dict(m) for m in data["models"]]
+
+
+# Default catalog — loaded from YAML once on import
+MODEL_CATALOG: list[Model] = load_catalog()
 
 
 def get_model(name: str) -> Model:
@@ -96,7 +66,3 @@ def get_model(name: str) -> Model:
 
 def get_models_by_tier(tier: ModelTier) -> list[Model]:
     return [m for m in MODEL_CATALOG if m.tier == tier]
-
-
-def get_models_by_provider(provider: str) -> list[Model]:
-    return [m for m in MODEL_CATALOG if m.provider == provider]

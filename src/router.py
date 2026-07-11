@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import subprocess
@@ -23,6 +24,18 @@ class Router:
             "cost": 0.0,
         }
         self.cache: dict[str, dict] = {}
+
+    # ------------------------------------------------------------------
+    #  Public helpers (used by tests)
+    # ------------------------------------------------------------------
+
+    def _task_type(self, prompt: str) -> TaskCategory:
+        """Classify a prompt. Public helper for testing."""
+        return classify_task(prompt)
+
+    def _cache_key(self, model_name: str, prompt: str) -> str:
+        """Generate cache key. Public helper for testing."""
+        return f"{model_name}:{hash(prompt)}"
 
     # ------------------------------------------------------------------
     #  Model selection
@@ -70,7 +83,7 @@ class Router:
         model = self.select_model(task)
 
         # Cache hit on cheapest model?
-        cache_key = f"{model.name}:{hash(prompt)}"
+        cache_key = hashlib.sha256(prompt.encode()).hexdigest()[:16]
         if cache_key in self.cache:
             return self.cache[cache_key]
 
@@ -78,7 +91,7 @@ class Router:
         best = None
 
         for attempt in chain:
-            response = self._call(attempt, prompt)
+            response, prompt_tok, completion_tok = self._call(attempt, prompt)
             tokens = self._count_tokens(response)
             score = evaluate_response(prompt, response, task)
 
@@ -117,8 +130,8 @@ class Router:
     #  Internal helpers
     # ------------------------------------------------------------------
 
-    def _call(self, model: Model, prompt: str) -> str:
-        """Call the model via Fireworks API."""
+    def _call(self, model: Model, prompt: str) -> tuple[str, int, int]:
+        """Call the model via Fireworks API. Returns (response, prompt_tokens, completion_tokens)."""
         payload = {
             "model": model.model_id,
             "messages": [{"role": "user", "content": prompt}],
@@ -141,9 +154,13 @@ class Router:
 
         try:
             data = json.loads(result.stdout)
-            return data["choices"][0]["message"]["content"]
+            content = data["choices"][0]["message"]["content"]
+            usage = data.get("usage", {})
+            prompt_tokens = usage.get("prompt_tokens", 0)
+            completion_tokens = usage.get("completion_tokens", 0)
+            return content, prompt_tokens, completion_tokens
         except (KeyError, json.JSONDecodeError):
-            return "[ERROR]"
+            return "[ERROR]", 0, 0
 
     @staticmethod
     def _count_tokens(text: str) -> int:
@@ -162,3 +179,24 @@ class Router:
     def _all() -> list[Model]:
         from src.models import MODEL_CATALOG
         return MODEL_CATALOG
+
+
+def main() -> None:
+    """CLI entry point for `python -m src.router`."""
+    import sys
+    if len(sys.argv) < 2:
+        print("Usage: python -m src.router <prompt>", file=sys.stderr)
+        sys.exit(1)
+    prompt = " ".join(sys.argv[1:])
+    router = Router()
+    result = router.route(prompt)
+    print(f"Model:   {result['model']}")
+    print(f"Tokens:  {result['tokens']}")
+    print(f"Cost:    ${result['cost']:.6f}")
+    print(f"Score:   {result['accuracy_score']:.2f}")
+    print(f"---")
+    print(result['response'])
+
+
+if __name__ == "__main__":
+    main()

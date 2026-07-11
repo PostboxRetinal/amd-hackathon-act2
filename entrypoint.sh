@@ -11,7 +11,7 @@ if [ -t 0 ]; then
     # Interactive mode
     echo "Enter a prompt (Ctrl+D to exit):"
     while read -r -p "> " prompt; do
-        uv run python -m src.router "$prompt"
+        uv run python -m src "$prompt"
     done
 else
     # Pipe mode

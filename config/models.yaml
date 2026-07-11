@@ -1,0 +1,51 @@
+# Model catalog for the routing agent.
+# Edit this file to add/modify models without touching code.
+
+models:
+  - name: gemma-4-9b-local
+    tier: cheap
+    provider: vllm
+    model_id: gemma-4-9b-local
+    cost_per_1k_tokens: 0.0
+    accuracy_score: 0.72
+    context_limit: 8192
+
+  - name: gemma-4-9b
+    tier: fast
+    provider: fireworks
+    model_id: accounts/fireworks/models/gemma-4-9b-it
+    cost_per_1k_tokens: 0.0002
+    accuracy_score: 0.82
+    context_limit: 16000
+
+  - name: gemma-4-26b
+    tier: standard
+    provider: fireworks
+    model_id: accounts/fireworks/models/gemma-4-26b-a4b-it
+    cost_per_1k_tokens: 0.0005
+    accuracy_score: 0.91
+    context_limit: 32000
+
+  - name: gemma-4-31b
+    tier: premium
+    provider: fireworks
+    model_id: accounts/fireworks/models/gemma-4-31b-it
+    cost_per_1k_tokens: 0.001
+    accuracy_score: 0.95
+    context_limit: 260000
+
+  - name: deepseek-v4-pro
+    tier: standard
+    provider: fireworks
+    model_id: accounts/fireworks/models/deepseek-v4-pro
+    cost_per_1k_tokens: 0.0015
+    accuracy_score: 0.93
+    context_limit: 1000000
+
+  - name: glm-5p2
+    tier: premium
+    provider: fireworks
+    model_id: accounts/fireworks/models/glm-5p2
+    cost_per_1k_tokens: 0.0014
+    accuracy_score: 0.94
+    context_limit: 1000000
