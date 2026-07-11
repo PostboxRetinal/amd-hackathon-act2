@@ -59,33 +59,60 @@ class Router:
         return f"{model_name}:{hash(prompt)}"
 
     # ------------------------------------------------------------------
-    #  Model selection
+    #  Task-aware model selection
     # ------------------------------------------------------------------
 
+    # Maps each task category to the model name that is best suited for it,
+    # balancing cost and capability.  The values must match the "name" field
+    # in config/models.yaml.
+    _TASK_MODEL_MAP: dict[TaskCategory, str] = {
+        TaskCategory.MATH:           "gemma-4-9b",       # fast, cheap, good at arithmetic
+        TaskCategory.FACTOID:        "gemma-4-9b",       # simple factual recall
+        TaskCategory.CLASSIFICATION: "gemma-4-9b",       # simple task
+        TaskCategory.EXTRACTION:     "gemma-4-9b",       # simple task
+        TaskCategory.SUMMARIZATION:  "gemma-4-26b",      # needs decent context + quality
+        TaskCategory.CREATIVE:       "gemma-4-26b",      # good balance for creative writing
+        TaskCategory.CODE:           "deepseek-v4-pro",  # strong coder
+        TaskCategory.REASONING:      "glm-5p2",          # strongest reasoning
+        TaskCategory.UNKNOWN:        "gemma-4-9b",       # cheap default
+    }
+
     def select_model(self, task: TaskCategory) -> Model:
-        """Pick the cheapest model tier suitable for this task category."""
+        """
+        Pick the best model for the task category.
 
-        # Tasks that small models handle reliably
-        if task in (
-            TaskCategory.FACTOID,
-            TaskCategory.CLASSIFICATION,
-            TaskCategory.EXTRACTION,
-            TaskCategory.MATH,
-        ):
-            return self._pick(ModelTier.CHEAP)
+        Strategy:
+          - Use a task-to-model strength map (cost-aware: cheapest suitable model first).
+          - If the recommended model is a local vLLM model that is unavailable,
+            fall back to the next suitable model by tier.
+        """
+        model_name = self._TASK_MODEL_MAP.get(task, "gemma-4-9b")
+        model = self._get_model_by_name(model_name)
 
-        return self._pick(ModelTier.FAST)
+        # If the recommended model is a local vLLM instance that is not running,
+        # fall back to the cheapest available Fireworks model.
+        if self._is_local_model(model) and not self._is_local_available():
+            model = self._cheapest_available_fireworks_model()
+
+        return model
 
     def _fallback_chain(self, current: Model) -> list[Model]:
-        """Models to try in order if the current one fails."""
-        tiers = list(ModelTier)
-        current_index = next(i for i, t in enumerate(tiers) if t == current.tier)
-        return [
-            m
-            for t in tiers[current_index + 1:]
-            for m in self._all()
-            if m.tier == t
+        """
+        Models to try in order if the current one fails.
+
+        Returns all *other* models sorted by cost (cheapest first), excluding
+        local vLLM models that are not available so we don't waste time on
+        dead endpoints.
+        """
+        all_models = self._all()
+        candidates = [
+            m for m in all_models
+            if m.name != current.name
+            and not (self._is_local_model(m) and not self._is_local_available())
         ]
+        # Sort by cost_per_1k_tokens so we always try the cheapest viable model first.
+        candidates.sort(key=lambda m: m.cost_per_1k_tokens)
+        return candidates
 
     # ------------------------------------------------------------------
     #  Routing
@@ -245,6 +272,31 @@ class Router:
             if m.tier == tier:
                 return m
         raise ValueError(f"No model for tier {tier}")
+
+    @staticmethod
+    def _get_model_by_name(name: str) -> Model:
+        """Return the model with the given name from the catalog."""
+        from src.models import MODEL_CATALOG
+        for m in MODEL_CATALOG:
+            if m.name == name:
+                return m
+        # Fallback: return the first non-local model if name not found
+        for m in MODEL_CATALOG:
+            if m.provider != "vllm":
+                return m
+        raise ValueError(f"Model '{name}' not found and no fallback available")
+
+    def _cheapest_available_fireworks_model(self) -> Model:
+        """Return the cheapest available non-local model (Fireworks)."""
+        candidates = [
+            m for m in self._all()
+            if not self._is_local_model(m)
+        ]
+        if not candidates:
+            # No non-local models — return the first model as last resort
+            return self._all()[0]
+        candidates.sort(key=lambda m: m.cost_per_1k_tokens)
+        return candidates[0]
 
     @staticmethod
     def _all() -> list[Model]:
