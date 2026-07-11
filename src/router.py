@@ -65,15 +65,15 @@ class Router:
     # balancing cost and capability.  The values must match the "name" field
     # in config/models.yaml.
     _TASK_MODEL_MAP: dict[TaskCategory, str] = {
-        TaskCategory.MATH: "gemma-4-26b",  # dedicated deploy, 0 cost per token
-        TaskCategory.FACTOID: "gemma-4-26b",  # dedicated deploy, 0 cost per token
-        TaskCategory.CLASSIFICATION: "gemma-4-26b",  # dedicated deploy, 0 cost per token
-        TaskCategory.EXTRACTION: "gemma-4-26b",  # dedicated deploy, 0 cost per token
-        TaskCategory.SUMMARIZATION: "gemma-4-26b",  # dedicated deploy, 0 cost per token
-        TaskCategory.CREATIVE: "gemma-4-26b",  # dedicated deploy, 0 cost per token
+        TaskCategory.MATH: "gemma-4-e4b-local",  # 0 FW tokens
+        TaskCategory.FACTOID: "gemma-4-e4b-local",  # 0 FW tokens
+        TaskCategory.CLASSIFICATION: "gemma-4-e4b-local",  # 0 FW tokens
+        TaskCategory.EXTRACTION: "gemma-4-e4b-local",  # 0 FW tokens
+        TaskCategory.SUMMARIZATION: "gemma-4-e4b-local",  # 0 FW tokens
+        TaskCategory.UNKNOWN: "gemma-4-e4b-local",  # 0 FW tokens
+        TaskCategory.CREATIVE: "gemma-4-26b",  # dedicated deploy
         TaskCategory.CODE: "deepseek-v4-pro",  # strong coder
         TaskCategory.REASONING: "glm-5p2",  # strongest reasoning
-        TaskCategory.UNKNOWN: "gemma-4-26b",  # dedicated deploy, 0 cost per token
     }
 
     def select_model(self, task: TaskCategory) -> Model:
