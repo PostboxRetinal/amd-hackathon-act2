@@ -135,38 +135,45 @@ def fetch_fireworks_models(api_key: str) -> dict[str, dict] | None:
     return result
 
 
-def display_fireworks_pool(api_key: str) -> None:
-    """Display a 'Refresh' button that fetches live pricing for Wayfinder models."""
-    refresh_col, status_col = st.columns([1, 2])
-    with refresh_col:
-        refresh_clicked = st.button("\U0001f504 Refresh", key="fw_refresh", use_container_width=True)
-    with status_col:
-        if refresh_clicked:
-            st.caption("Fetching...")
-
-    if refresh_clicked:
-        live = fetch_fireworks_models(api_key)
-        if live:
-            st.success(f"Updated {len(live)} models")
-            for name, info in live.items():
-                st.markdown(
-                    f"<div style='font-size:12px; padding:2px 0;'>"
-                    f"<strong>{name}</strong> "
-                    f"<span style='color:#888;'>| "
-                    f"${info['prompt_cost']:.4f}/${info['completion_cost']:.4f} per token "
-                    f"| ctx: {info['context_length']:,}</span>"
-                    f"</div>",
-                    unsafe_allow_html=True,
-                )
-        else:
-            st.error("Failed to fetch from Fireworks API")
-
-
 def display_model_pool(router: Router, api_key: str | None = None) -> None:
-    """Show the pool of available models with their status."""
-    all_models = router._all()
+    """Show the pool of available models with live pricing and status."""
+    from datetime import datetime
 
-    data = []
+    if "live_models" not in st.session_state:
+        st.session_state.live_models = {}
+    if "live_updated" not in st.session_state:
+        st.session_state.live_updated = None
+
+    all_models = router._all()
+    effective_key = api_key or os.environ.get("FIREWORKS_API_KEY")
+
+    def _on_refresh(fw_key: str) -> None:
+        data = fetch_fireworks_models(fw_key)
+        if data is not None:
+            st.session_state.live_models = data
+            st.session_state.live_updated = datetime.now().strftime("%H:%M")
+            st.session_state.pop("live_error", None)
+        else:
+            st.session_state.live_error = "API call failed"
+
+    st.markdown("**Model Pool**")
+
+    if effective_key:
+        st.button(
+            "Refresh",
+            key="fw_refresh",
+            on_click=_on_refresh,
+            args=[effective_key],
+            use_container_width=True,
+        )
+        updated = st.session_state.get("live_updated")
+        if updated:
+            st.caption(f"Last updated: {updated}")
+        if "live_error" in st.session_state:
+            st.error(st.session_state.live_error)
+
+    live = st.session_state.get("live_models", {})
+
     for m in all_models:
         # Determine status
         if m.provider == "local":
@@ -176,48 +183,38 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
                 s.settimeout(0.5)
                 host, port_str = m.model_id.split("://")[1].split("/")[0].split(":")
                 port = int(port_str)
-                status = s.connect_ex((host, port)) == 0
+                status_label = "[UP]" if s.connect_ex((host, port)) == 0 else "[DOWN]"
                 s.close()
-                status_label = "Ready" if status else "Down"
             except Exception:
-                status_label = "Down"
+                status_label = "[DOWN]"
         elif m.provider == "fireworks" and "deployments" in m.model_id:
-            status_label = "Paused"
+            status_label = "[SETUP]"
         else:
-            status_label = "Ready"
+            status_label = "[UP]"
 
-        data.append({
-            "Model": m.name,
-            "Tier": m.tier.value if hasattr(m.tier, "value") else str(m.tier),
-            "Provider": m.provider,
-            "Cost/1K": f"${m.cost_per_1k_tokens:.4f}" if m.cost_per_1k_tokens > 0 else "$0.00",
-            "Status": status_label,
-        })
+        # Live pricing
+        live_info = live.get(m.name, {})
+        prompt_cost = live_info.get("prompt_cost")
+        ctx = live_info.get("context_length")
 
-    st.markdown("**Model Pool**")
-
-    for entry in data:
-        status = entry["Status"]
-        if status == "Ready":
-            icon = "[OK]"
-        elif status == "Paused":
-            icon = "[PAUSED]"
+        if prompt_cost is not None:
+            cost_str = f"${prompt_cost:.4f}"
+            if prompt_cost != m.cost_per_1k_tokens:
+                cost_str = f"~${prompt_cost:.4f}"
         else:
-            icon = "[RED]"
+            cost_str = f"${m.cost_per_1k_tokens:.4f}"
+
+        ctx_str = f"ctx: {ctx:,}" if ctx else f"ctx: {m.context_limit:,}"
+
+        tier_str = m.tier.value if hasattr(m.tier, "value") else str(m.tier)
 
         st.markdown(
             f"<div style='font-size:13px; padding:2px 0;'>"
-            f"{icon} <strong>{entry['Model']}</strong> "
-            f"<span style='color:#888;'>| {entry['Tier']} | {entry['Cost/1K']}</span>"
+            f"{status_label} <strong>{m.name}</strong> "
+            f"<span style='color:#888;'>| {tier_str} | {m.provider} | {cost_str} | {ctx_str}</span>"
             f"</div>",
             unsafe_allow_html=True,
         )
-
-    # Refresh from Fireworks button
-    effective_key = api_key or os.environ.get("FIREWORKS_API_KEY")
-    if effective_key:
-        st.divider()
-        display_fireworks_pool(effective_key)
 
 
 def add_to_history(prompt: str, result: dict, elapsed: float) -> None:

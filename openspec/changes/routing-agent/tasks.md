@@ -177,3 +177,18 @@
 **Status:** Complete
 **Action:** Add tests: cache hit returns same result, cache does not increment stats, route result contains all required keys, empty prompt returns valid dict, long prompt (400+ chars) routes correctly.
 **Verification:** `pytest tests/test_router.py -v` — all 28 test methods pass
+
+### T-037: Model Pool redesign with live Refresh
+**Status:** Complete
+**Action:** Rework display_model_pool() to merge static config data with live data from Fireworks API stored in st.session_state.live_models. Replace separate display_fireworks_pool() block with inline live data in each model row. On Refresh click, store API response in session state and call st.rerun().
+**Verification:** Refresh button updates pricing and context values directly in the pool rows, not in a separate block.
+
+### T-038: Status labels: UP/DOWN/NEEDS_SETUP
+**Status:** Complete
+**Action:** Replace generic "Ready"/"Paused"/"Down" labels with descriptive statuses: UP for serverless models, NEEDS_SETUP for Gemma 4 dedicated deploys (require dashboard activation), DOWN for unreachable local servers.
+**Files:** `app/utils.py`
+
+### T-039: Version bump 0.2.0 -> 0.3.0
+**Status:** Complete
+**Action:** Increment MINOR version in pyproject.toml per SEMVER for the live refresh and status redesign features.
+**Verification:** `streamlit run` footer shows `Wayfinder v0.3.0`
