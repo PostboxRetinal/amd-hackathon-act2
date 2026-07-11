@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 
+# If arguments are provided, execute them instead of entering prompt mode
+if [ $# -gt 0 ]; then
+    exec "$@"
+fi
+
 echo "=== Hybrid Token-Efficient Routing Agent ==="
 echo ""
 
