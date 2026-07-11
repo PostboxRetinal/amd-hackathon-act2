@@ -107,3 +107,23 @@
 **Status:** Complete
 **Action:** Add None content check in router._call() to return [ERROR] when API returns content:null. Add TypeError and AttributeError to exception handler.
 **Verification:** `pytest tests/ -v` — 37 passed, 84% coverage
+
+### T-022: Fix classify_task() hyphens misclassified as math
+**Status:** Complete
+**Action:** Remove bare math operators (`+`, `-`, `*`, `/`, `%`) from keyword list in classify_task(). Words like "high-level" or "object-oriented" no longer trigger MATH classification.
+**Verification:** Summarization and extraction prompts classified correctly instead of as math
+
+### T-023: Fix evaluator refusal false positives
+**Status:** Complete
+**Action:** Remove bare "cannot" and "error" from evaluator refusal keywords. Keep specific "i cannot" and "[ERROR]" API check. Code explanations like "it cannot be prime" no longer penalized.
+**Verification:** `pytest tests/test_evaluator.py -v` — all pass
+
+### T-024: Increase max_tokens for Gemma 4 reasoning
+**Status:** Complete
+**Action:** Raise MAX_TOKENS_BY_CATEGORY from 100-512 to 2048-4096. Gemma 4 needs token budget for chain-of-thought reasoning before producing content.
+**Verification:** Gemma 4 no longer returns content:null due to token exhaustion
+
+### T-025: Improve evaluate.py CLI output
+**Status:** Complete
+**Action:** Replace cryptic `[FB]` with clear Status column (PASS/FALLBACK), add live progress per prompt to stderr, add Gemma Prize eligibility footer line. Improve token display formatting.
+**Verification:** `uv run python scripts/evaluate.py` — shows live progress, clear status column, Gemma Prize footer

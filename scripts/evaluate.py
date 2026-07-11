@@ -50,11 +50,17 @@ def run_benchmark(router: Router) -> dict:
     total_tokens = 0
     total_cost = 0.0
     falls_back = 0
+    gemma_prize_count = 0
 
-    for category, prompt in BENCHMARK_SUITE:
+    total = len(BENCHMARK_SUITE)
+    for idx, (category, prompt) in enumerate(BENCHMARK_SUITE, 1):
+        print(f'[{idx}/{total}] Testing: "{prompt}"...', file=sys.stderr, flush=True)
         start = time.time()
         result = router.route(prompt)
         elapsed = time.time() - start
+
+        if "gemma" in result["model"]:
+            gemma_prize_count += 1
 
         results.append(
             {
@@ -80,6 +86,7 @@ def run_benchmark(router: Router) -> dict:
             "total_cost": round(total_cost, 6),
             "falls_back": falls_back,
             "models_used": len(set(r["model"] for r in results)),
+            "gemma_prize_count": gemma_prize_count,
         },
         "results": results,
     }
@@ -88,24 +95,31 @@ def run_benchmark(router: Router) -> dict:
 def print_report(report: dict):
     """Pretty-print the benchmark report."""
     s = report["summary"]
-    print("=" * 60)
-    print(f"  EVALUATION REPORT — {s['total_prompts']} prompts")
-    print("=" * 60)
+    print("=" * 72)
+    print(f"  EVALUATION REPORT -- {s['total_prompts']} prompts")
+    print("=" * 72)
     print(f"  Total tokens:  {s['total_tokens']}")
     print(f"  Total cost:    ${s['total_cost']:.6f}")
     print(f"  Fallbacks:     {s['falls_back']}/{s['total_prompts']}")
     print(f"  Models used:   {s['models_used']}")
-    print("-" * 60)
+    print("-" * 72)
     print(
-        f"  {'#':>3} {'Category':<14} {'Model':<20} {'Tok':>5} {'Cost':>8} {'Acc':>4} {'Time':>5}"
+        f"  {'#':>3} {'Category':<14} {'Model':<20} {'Tok':>5} {'Cost':>8} {'Acc':>4} {'Time':>5}  {'Status':<10}"
     )
-    print("-" * 60)
+    print("-" * 72)
     for i, r in enumerate(report["results"], 1):
-        fb = "[FB]" if r["fallback"] else "    "
+        status = "FALLBACK" if r["fallback"] else "PASS"
         print(
-            f"  {i:>3} {r['category']:<14} {r['model']:<20} {r['tokens']:>5} ${r['cost']:<6.4f} {r['accuracy']:.2f} {r['time_s']:>4.1f}s {fb}"
+            f"  {i:>3} {r['category']:<14} {r['model']:<20} {r['tokens']:>5d} ${r['cost']:<6.4f} {r['accuracy']:.2f} {r['time_s']:>4.1f}s  {status:<10}"
         )
-    print("=" * 60)
+    print("=" * 72)
+    gemma_count = s.get("gemma_prize_count", 0)
+    if gemma_count > 0:
+        print(
+            f"  Gemma Prize: YES (gemma model used in {gemma_count}/{s['total_prompts']} prompts)"
+        )
+    else:
+        print("  Gemma Prize: NO (no gemma model used)")
 
 
 def main():
