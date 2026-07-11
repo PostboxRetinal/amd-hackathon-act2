@@ -154,7 +154,7 @@ bash scripts/qa.sh
 The QA pipeline checks:
 1. `ruff check` — Lint errors, unused imports, naming conventions
 2. `ruff format --check` — Code formatting consistency
-3. `pytest` — All 45+ tests pass
+3. `pytest --cov=src` — 37 tests, 85% coverage (threshold: 80%)
 
 If any check fails, the commit is blocked. To bypass (not recommended):
 ```bash

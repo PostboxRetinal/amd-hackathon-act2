@@ -95,5 +95,5 @@
 
 ### T-019: Add test coverage reporting
 **Status:** Complete
-**Action:** Add pytest-cov to QA pipeline with --cov=src --cov-fail-under=80, raise coverage from 74% to 91% with 38 new router tests
-**Verification:** `bash scripts/qa.sh` — 83 tests, 91.49% coverage, threshold 80%
+**Action:** Add pytest-cov to QA pipeline with --cov=src --cov-fail-under=80
+**Verification:** `bash scripts/qa.sh` — 37 tests, 84.68% coverage, threshold 80%
