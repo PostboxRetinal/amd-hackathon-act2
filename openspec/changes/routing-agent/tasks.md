@@ -28,17 +28,17 @@
 **Verification:** `pytest tests/test_router.py -v` — 5/5 pass
 
 ### T-006: Install PyTorch ROCm + vLLM on AMD Jupyter
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Action:** Install torch with ROCm 7.2, verify GPU detection
 **Verification:** `python3 -c "import torch; print(f'GPUs: {torch.cuda.device_count()}')"` — expects 11
 
 ### T-007: Benchmark models on Fireworks
-**Status:** ⏳ Pending
+**Status:** ✅ Complete
 **Action:** Run `uv run python scripts/benchmark.py` with FIREWORKS_API_KEY
 **Verification:** Produces benchmark report with token counts and accuracy
 
 ### T-008: Run local evaluation
-**Status:** ⏳ Pending
+**Status:** ✅ Complete
 **Action:** Run `uv run python scripts/evaluate.py` after benchmarking
 **Verification:** Produces evaluation report JSON
 
@@ -50,5 +50,30 @@
 ### T-010: Submission
 **Status:** ⏳ Pending
 **Action:** Complete lablab.ai submission form
-**Deadline:** Jul 11, 11:00 AM COT
+**Deadline:** Jul 12, 3:00 PM PT
 **Items:** Title, description, video, slides, repo, Docker image
+
+### T-011: Fix evaluator — [ERROR] detection, stronger penalties
+**Status:** ✅ Complete
+**Action:** Penalize [ERROR] responses in evaluator, add stronger code/math penalties
+**Verification:** `pytest tests/test_evaluator.py -v` — all pass
+
+### T-012: Add local model health check
+**Status:** ✅ Complete
+**Action:** Router skips vLLM local models gracefully when unavailable
+**Verification:** `pytest tests/test_router.py -v` — all pass
+
+### T-013: Add per-category max_tokens
+**Status:** ✅ Complete
+**Action:** factoid=100, math=150, code=1024, reasoning=1024
+**Verification:** `pytest tests/ -v` — 17/17 pass
+
+### T-014: Add best=None guard in fallback chain
+**Status:** ✅ Complete
+**Action:** Guard against empty fallback result in router
+**Verification:** `pytest tests/test_router.py -v` — all pass
+
+### T-015: Configure GLM 5.2 subagent delegation
+**Status:** ✅ Complete
+**Action:** Configure GLM 5.2 via OpenRouter (Novita ZDR) for complex coding tasks
+**Verification:** Subagent config validated
