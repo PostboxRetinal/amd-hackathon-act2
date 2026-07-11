@@ -95,7 +95,7 @@ class TestCall:
         )
         m = router._pick(ModelTier.FAST)
         r, pt, ct = router._call(m, "hi")
-        assert r == "[ERROR]"
+        assert r == "[ERROR: Failed to parse Fireworks API response]"
 
 
 class TestRouteEdgeCases:

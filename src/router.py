@@ -150,7 +150,7 @@ class Router:
             )
 
             # If a local model returned an error, skip to next tier immediately.
-            if response == "[ERROR]" and self._is_local_model(attempt):
+            if response.startswith("[ERROR") and self._is_local_model(attempt):
                 continue
 
             tokens = prompt_tok + completion_tok
@@ -216,6 +216,13 @@ class Router:
             headers = ["-H", "Content-Type: application/json"]
         else:
             # Fireworks model: use Fireworks endpoint with auth header.
+            # Check for missing API key before attempting the call.
+            if not self.api_key:
+                return (
+                    "[ERROR: FIREWORKS_API_KEY not set. Set the FIREWORKS_API_KEY environment variable.]",
+                    0,
+                    0,
+                )
             url = "https://api.fireworks.ai/inference/v1/chat/completions"
             headers = [
                 "-H",
@@ -240,20 +247,36 @@ class Router:
                 text=True,
                 timeout=60,
             )
-        except (subprocess.TimeoutExpired, OSError):
-            return "[ERROR]", 0, 0
+        except subprocess.TimeoutExpired:
+            if model.provider.lower() == "local":
+                return f"[ERROR: Local model at {url} timed out after 60 seconds]", 0, 0
+            return "[ERROR: Fireworks API request timed out after 60 seconds]", 0, 0
+        except OSError as e:
+            if model.provider.lower() == "local":
+                return f"[ERROR: Cannot connect to local model at {url} - {e.strerror}]", 0, 0
+            return f"[ERROR: Connection error to Fireworks API - {e.strerror}]", 0, 0
 
         try:
             data = json.loads(result.stdout)
             content = data["choices"][0]["message"]["content"]
             if content is None:
-                return "[ERROR]", 0, 0
+                return "[ERROR: Fireworks API returned null content]", 0, 0
             usage = data.get("usage", {})
             prompt_tokens = usage.get("prompt_tokens", 0)
             completion_tokens = usage.get("completion_tokens", 0)
             return content, prompt_tokens, completion_tokens
         except (KeyError, json.JSONDecodeError, TypeError, AttributeError):
-            return "[ERROR]", 0, 0
+            # Check if API returned an error message in its response body.
+            try:
+                err_data = json.loads(result.stdout)
+                err_msg = err_data.get("error", {})
+                if isinstance(err_msg, dict):
+                    err_msg = err_msg.get("message", "Unknown API error")
+                return f"[ERROR: Fireworks API - {err_msg}]", 0, 0
+            except (json.JSONDecodeError, AttributeError, TypeError):
+                if model.provider.lower() == "local":
+                    return f"[ERROR: Failed to parse response from local model at {url}]", 0, 0
+                return "[ERROR: Failed to parse Fireworks API response]", 0, 0
 
     # ------------------------------------------------------------------
     #  Local model helpers
