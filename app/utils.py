@@ -193,18 +193,11 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
         ctx = live_info.get("context_length")
 
         # Status determination
-        if m.provider == "local":
-            try:
-                import socket
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.settimeout(0.5)
-                host, port_str = m.model_id.split("://")[1].split("/")[0].split(":")
-                port = int(port_str)
-                status = "UP" if s.connect_ex((host, port)) == 0 else "DOWN"
-                s.close()
-            except Exception:
-                status = "DOWN"
-        elif m.provider == "fireworks" and "deployments" in m.model_id:
+        if "gemma" in m.name.lower():
+            status = "SETUP"
+        elif m.provider == "local":
+            status = "DOWN"
+        elif "deployments" in m.model_id:
             status = "SETUP"
         else:
             status = "UP"
