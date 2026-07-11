@@ -12,7 +12,7 @@ def evaluate_response(prompt: str, response: str, task: TaskCategory) -> float:
         return 0.0
 
     # Detect API-level errors immediately
-    if response.strip() == "[ERROR]":
+    if response.strip().startswith("[ERROR"):
         return 0.0
 
     # Single-digit answers are valid for math
