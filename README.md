@@ -39,7 +39,7 @@ Evaluator (src/evaluator.py)
   │  Stronger penalties for code/math
   ▼
 Score ≥ 0.7?
-  ├── YES → ✅ Return response
+  ├── YES → [OK] Return response
   └── NO  → Escalate to next tier
             FAST → STANDARD → PREMIUM
             (best=None guard prevents crashes)

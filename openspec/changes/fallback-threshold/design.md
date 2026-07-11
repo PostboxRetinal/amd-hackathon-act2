@@ -17,7 +17,7 @@
                                    ▼
                           ┌──────────────────┐
                           │  score ≥ threshold│
-                          │  ✅ accept / ❌ fallback│
+                          │  accept / fallback│
                           └──────────────────┘
 ```
 

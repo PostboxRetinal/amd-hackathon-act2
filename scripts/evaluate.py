@@ -96,7 +96,7 @@ def print_report(report: dict):
     print(f"  {'#':>3} {'Category':<14} {'Model':<20} {'Tok':>5} {'Cost':>8} {'Acc':>4} {'Time':>5}")
     print("-" * 60)
     for i, r in enumerate(report["results"], 1):
-        fb = "⬆" if r["fallback"] else "  "
+        fb = "[FB]" if r["fallback"] else "    "
         print(f"  {i:>3} {r['category']:<14} {r['model']:<20} {r['tokens']:>5} ${r['cost']:<6.4f} {r['accuracy']:.2f} {r['time_s']:>4.1f}s {fb}")
     print("=" * 60)
 

@@ -8,7 +8,7 @@ Build an intelligent router that minimizes Fireworks AI tokens by selecting the 
 Prompt → Task Classifier → Select Model → Execute Inference → Evaluate Response
                                                                     ↓
                                                               Score ≥ 0.7?
-                                                              ├── Yes → ✅ Return
+                                                              ├── Yes → [OK] Return
                                                               └── No → Escalate to next tier
 ```
 
