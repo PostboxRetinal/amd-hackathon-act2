@@ -2,6 +2,7 @@
 Local evaluation harness for the routing agent.
 Runs the router against a set of benchmark prompts and generates a report.
 """
+
 import json
 import os
 import sys
@@ -9,35 +10,35 @@ import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from src.router import Router
 from src.models import MODEL_CATALOG
+from src.router import Router
 
 BENCHMARK_SUITE = [
     # Math
     ("math", "Calculate 1,234 + 5,678"),
     ("math", "What is 15% of 200?"),
     ("math", "If x = 5 and y = 3, what is 2x + 3y?"),
-
     # Code
     ("code", "Write a Python function to reverse a string"),
     ("code", "Create a function that checks if a number is prime"),
     ("code", "Write a bash one-liner to count lines in all .txt files"),
-
     # Factoid
     ("factoid", "What is the capital of Japan?"),
     ("factoid", "Who wrote Romeo and Juliet?"),
     ("factoid", "What is the chemical symbol for gold?"),
-
     # Reasoning
     ("reasoning", "If all humans are mortal and Socrates is human, is Socrates mortal?"),
     ("reasoning", "Explain why ice floats on water"),
-
     # Summarization
-    ("summarization", "Summarize: Python is a high-level, interpreted programming language known for its readability and versatility. It supports multiple paradigms including object-oriented, functional, and procedural programming."),
-
+    (
+        "summarization",
+        "Summarize: Python is a high-level, interpreted programming language known for its readability and versatility. It supports multiple paradigms including object-oriented, functional, and procedural programming.",
+    ),
     # Extraction
-    ("extraction", "Extract all email addresses from: Contact john@example.com or support@test.org for help."),
-
+    (
+        "extraction",
+        "Extract all email addresses from: Contact john@example.com or support@test.org for help.",
+    ),
     # Unknown / creative
     ("creative", "Tell me a short sci-fi story about a rogue AI"),
 ]
@@ -55,16 +56,18 @@ def run_benchmark(router: Router) -> dict:
         result = router.route(prompt)
         elapsed = time.time() - start
 
-        results.append({
-            "category": category,
-            "prompt": prompt[:80],
-            "model": result["model"],
-            "tokens": result["tokens"],
-            "cost": result["cost"],
-            "accuracy": round(result["accuracy_score"], 2),
-            "fallback": result["fallback_used"],
-            "time_s": round(elapsed, 2),
-        })
+        results.append(
+            {
+                "category": category,
+                "prompt": prompt[:80],
+                "model": result["model"],
+                "tokens": result["tokens"],
+                "cost": result["cost"],
+                "accuracy": round(result["accuracy_score"], 2),
+                "fallback": result["fallback_used"],
+                "time_s": round(elapsed, 2),
+            }
+        )
         total_tokens += result["tokens"]
         total_cost += result["cost"]
         if result["fallback_used"]:
@@ -93,11 +96,15 @@ def print_report(report: dict):
     print(f"  Fallbacks:     {s['falls_back']}/{s['total_prompts']}")
     print(f"  Models used:   {s['models_used']}")
     print("-" * 60)
-    print(f"  {'#':>3} {'Category':<14} {'Model':<20} {'Tok':>5} {'Cost':>8} {'Acc':>4} {'Time':>5}")
+    print(
+        f"  {'#':>3} {'Category':<14} {'Model':<20} {'Tok':>5} {'Cost':>8} {'Acc':>4} {'Time':>5}"
+    )
     print("-" * 60)
     for i, r in enumerate(report["results"], 1):
         fb = "[FB]" if r["fallback"] else "    "
-        print(f"  {i:>3} {r['category']:<14} {r['model']:<20} {r['tokens']:>5} ${r['cost']:<6.4f} {r['accuracy']:.2f} {r['time_s']:>4.1f}s {fb}")
+        print(
+            f"  {i:>3} {r['category']:<14} {r['model']:<20} {r['tokens']:>5} ${r['cost']:<6.4f} {r['accuracy']:.2f} {r['time_s']:>4.1f}s {fb}"
+        )
     print("=" * 60)
 
 

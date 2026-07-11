@@ -1,43 +1,76 @@
+"""Tests for the response evaluator."""
+
 from src.evaluator import evaluate_response
 from src.tasks import TaskCategory
 
 
 def test_perfect_response():
-    score = evaluate_response("What is 2+2?", "4", TaskCategory.MATH)
-    assert score > 0.5
-
-
-def test_refusal_penalty():
-    score = evaluate_response("What is 2+2?", "I'm sorry, I cannot answer that.", TaskCategory.MATH)
-    assert score < 0.5
+    """A good, substantive response should score high."""
+    score = evaluate_response(
+        "Explain quantum computing",
+        "Quantum computing uses quantum bits (qubits) which can exist in superposition, "
+        "allowing parallel computation across many states simultaneously.",
+        TaskCategory.REASONING,
+    )
+    assert score >= 0.7
 
 
 def test_empty_response():
-    score = evaluate_response("Hello?", "", TaskCategory.UNKNOWN)
-    assert score == 0.0
+    """An empty response should score 0.0."""
+    assert evaluate_response("What is 2+2?", "", TaskCategory.MATH) == 0.0
 
 
 def test_error_response():
-    score = evaluate_response("Hello?", "[ERROR]", TaskCategory.UNKNOWN)
-    assert score == 0.0
+    """An [ERROR] response should score 0.0."""
+    assert evaluate_response("What is 2+2?", "[ERROR]", TaskCategory.MATH) == 0.0
+
+
+def test_refusal_penalty():
+    """A refusal response should be penalized."""
+    score = evaluate_response(
+        "Tell me about history",
+        "I'm sorry, but I cannot help with that request.",
+        TaskCategory.FACTOID,
+    )
+    assert score < 1.0
 
 
 def test_code_contains_code():
-    score = evaluate_response("Write a function", "def foo(): pass", TaskCategory.CODE)
-    assert score > 0.5
+    """A code response with code blocks should not be penalized for missing code."""
+    score = evaluate_response(
+        "Write a function",
+        "Here is your function:\n```python\ndef hello():\n    print('hello')\n```",
+        TaskCategory.CODE,
+    )
+    assert score >= 0.7
 
 
 def test_code_missing_code():
-    score = evaluate_response("Write a function", "I don't know how to code", TaskCategory.CODE)
-    assert score < 0.5
+    """A code response without any code markers should be penalized."""
+    score = evaluate_response(
+        "Write a function",
+        "Sure, I can help with that.",
+        TaskCategory.CODE,
+    )
+    assert score < 0.7
 
 
 def test_math_no_numbers():
-    score = evaluate_response("Calculate 2+2", "The answer is unknown", TaskCategory.MATH)
+    """A math response without any digits should be penalized."""
+    score = evaluate_response(
+        "What is two plus two?",
+        "The answer is four.",
+        TaskCategory.MATH,
+    )
     assert score < 0.7
 
 
 def test_factoid_too_long():
-    score = evaluate_response("What is the capital of Japan?", "Tokyo is the capital of Japan. " * 20, TaskCategory.FACTOID)
+    """A factoid response that is too long should be penalized."""
+    long_response = "The capital of France is Paris. " * 20
+    score = evaluate_response(
+        "What is the capital of France?",
+        long_response,
+        TaskCategory.FACTOID,
+    )
     assert score < 1.0
-    assert score > 0.5

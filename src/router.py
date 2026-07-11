@@ -3,11 +3,10 @@ import json
 import os
 import socket
 import subprocess
-from typing import Optional
 
+from src.evaluator import evaluate_response
 from src.models import Model, ModelTier
 from src.tasks import TaskCategory, classify_task
-from src.evaluator import evaluate_response
 
 # Per-category max_tokens — smaller for concise tasks, larger for code/reasoning.
 MAX_TOKENS_BY_CATEGORY: dict[TaskCategory, int] = {
@@ -33,7 +32,7 @@ class Router:
     validates response quality, and escalates to larger models when needed.
     """
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         self.api_key = api_key or os.environ.get("FIREWORKS_API_KEY", "")
         self.stats = {
             "total_calls": 0,
@@ -66,15 +65,15 @@ class Router:
     # balancing cost and capability.  The values must match the "name" field
     # in config/models.yaml.
     _TASK_MODEL_MAP: dict[TaskCategory, str] = {
-        TaskCategory.MATH:           "gemma-4-9b",       # fast, cheap, good at arithmetic
-        TaskCategory.FACTOID:        "gemma-4-9b",       # simple factual recall
-        TaskCategory.CLASSIFICATION: "gemma-4-9b",       # simple task
-        TaskCategory.EXTRACTION:     "gemma-4-9b",       # simple task
-        TaskCategory.SUMMARIZATION:  "gemma-4-26b",      # needs decent context + quality
-        TaskCategory.CREATIVE:       "gemma-4-26b",      # good balance for creative writing
-        TaskCategory.CODE:           "deepseek-v4-pro",  # strong coder
-        TaskCategory.REASONING:      "glm-5p2",          # strongest reasoning
-        TaskCategory.UNKNOWN:        "gemma-4-9b",       # cheap default
+        TaskCategory.MATH: "gemma-4-9b",  # fast, cheap, good at arithmetic
+        TaskCategory.FACTOID: "gemma-4-9b",  # simple factual recall
+        TaskCategory.CLASSIFICATION: "gemma-4-9b",  # simple task
+        TaskCategory.EXTRACTION: "gemma-4-9b",  # simple task
+        TaskCategory.SUMMARIZATION: "gemma-4-26b",  # needs decent context + quality
+        TaskCategory.CREATIVE: "gemma-4-26b",  # good balance for creative writing
+        TaskCategory.CODE: "deepseek-v4-pro",  # strong coder
+        TaskCategory.REASONING: "glm-5p2",  # strongest reasoning
+        TaskCategory.UNKNOWN: "gemma-4-9b",  # cheap default
     }
 
     def select_model(self, task: TaskCategory) -> Model:
@@ -106,7 +105,8 @@ class Router:
         """
         all_models = self._all()
         candidates = [
-            m for m in all_models
+            m
+            for m in all_models
             if m.name != current.name
             and not (self._is_local_model(m) and not self._is_local_available())
         ]
@@ -199,9 +199,7 @@ class Router:
     #  Internal helpers
     # ------------------------------------------------------------------
 
-    def _call(
-        self, model: Model, prompt: str, max_tokens: int = 512
-    ) -> tuple[str, int, int]:
+    def _call(self, model: Model, prompt: str, max_tokens: int = 512) -> tuple[str, int, int]:
         """Call the model via Fireworks API. Returns (response, prompt_tokens, completion_tokens)."""
         payload = {
             "model": model.model_id,
@@ -212,11 +210,17 @@ class Router:
 
         result = subprocess.run(
             [
-                "curl", "-s", "-X", "POST",
+                "curl",
+                "-s",
+                "-X",
+                "POST",
                 "https://api.fireworks.ai/inference/v1/chat/completions",
-                "-H", f"Authorization: Bearer {self.api_key}",
-                "-H", "Content-Type: application/json",
-                "-d", json.dumps(payload),
+                "-H",
+                f"Authorization: Bearer {self.api_key}",
+                "-H",
+                "Content-Type: application/json",
+                "-d",
+                json.dumps(payload),
             ],
             capture_output=True,
             text=True,
@@ -252,11 +256,9 @@ class Router:
 
         self._local_checked = True
         try:
-            with socket.create_connection(
-                (_VLLM_HOST, _VLLM_PORT), timeout=1.0
-            ):
+            with socket.create_connection((_VLLM_HOST, _VLLM_PORT), timeout=1.0):
                 self._local_available = True
-        except (OSError, socket.timeout):
+        except (TimeoutError, OSError):
             self._local_available = False
         return self._local_available
 
@@ -268,6 +270,7 @@ class Router:
     @staticmethod
     def _pick(tier: ModelTier) -> Model:
         from src.models import MODEL_CATALOG
+
         for m in MODEL_CATALOG:
             if m.tier == tier:
                 return m
@@ -277,6 +280,7 @@ class Router:
     def _get_model_by_name(name: str) -> Model:
         """Return the model with the given name from the catalog."""
         from src.models import MODEL_CATALOG
+
         for m in MODEL_CATALOG:
             if m.name == name:
                 return m
@@ -288,10 +292,7 @@ class Router:
 
     def _cheapest_available_fireworks_model(self) -> Model:
         """Return the cheapest available non-local model (Fireworks)."""
-        candidates = [
-            m for m in self._all()
-            if not self._is_local_model(m)
-        ]
+        candidates = [m for m in self._all() if not self._is_local_model(m)]
         if not candidates:
             # No non-local models — return the first model as last resort
             return self._all()[0]
@@ -301,12 +302,14 @@ class Router:
     @staticmethod
     def _all() -> list[Model]:
         from src.models import MODEL_CATALOG
+
         return MODEL_CATALOG
 
 
 def main() -> None:
     """CLI entry point for `python -m src.router`."""
     import sys
+
     if len(sys.argv) < 2:
         print("Usage: python -m src.router <prompt>", file=sys.stderr)
         sys.exit(1)
@@ -317,8 +320,8 @@ def main() -> None:
     print(f"Tokens:  {result['tokens']}")
     print(f"Cost:    ${result['cost']:.6f}")
     print(f"Score:   {result['accuracy_score']:.2f}")
-    print(f"---")
-    print(result['response'])
+    print("---")
+    print(result["response"])
 
 
 if __name__ == "__main__":

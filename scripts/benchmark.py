@@ -11,9 +11,9 @@ import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from src.evaluator import evaluate_response
 from src.models import MODEL_CATALOG, Model
 from src.tasks import TaskCategory
-from src.evaluator import evaluate_response
 
 # Test prompts — one per category
 TEST_PROMPTS: dict[TaskCategory, list[str]] = {
@@ -49,11 +49,17 @@ def call_fireworks(model: Model, prompt: str, api_key: str) -> tuple[str, int, f
     start = time.time()
     result = subprocess.run(
         [
-            "curl", "-s", "-X", "POST",
+            "curl",
+            "-s",
+            "-X",
+            "POST",
             "https://api.fireworks.ai/inference/v1/chat/completions",
-            "-H", f"Authorization: Bearer {api_key}",
-            "-H", "Content-Type: application/json",
-            "-d", json.dumps(payload),
+            "-H",
+            f"Authorization: Bearer {api_key}",
+            "-H",
+            "Content-Type: application/json",
+            "-d",
+            json.dumps(payload),
         ],
         capture_output=True,
         text=True,
@@ -64,8 +70,7 @@ def call_fireworks(model: Model, prompt: str, api_key: str) -> tuple[str, int, f
     try:
         data = json.loads(result.stdout)
         content = data["choices"][0]["message"]["content"]
-        tokens = (data["usage"]["completion_tokens"]
-                  if "usage" in data else len(content) // 4)
+        tokens = data["usage"]["completion_tokens"] if "usage" in data else len(content) // 4
     except (KeyError, json.JSONDecodeError):
         content = "[ERROR]"
         tokens = 0
@@ -91,7 +96,9 @@ def main():
             for prompt in prompts:
                 response, tokens, elapsed = call_fireworks(model, prompt, api_key)
                 score = evaluate_response(prompt, response, category)
-                print(f"{model.name:30s} {category.value:15s} {score:6.2f} {tokens:8d} {elapsed:5.1f}s")
+                print(
+                    f"{model.name:30s} {category.value:15s} {score:6.2f} {tokens:8d} {elapsed:5.1f}s"
+                )
             time.sleep(0.5)  # Rate-limit politeness
 
 

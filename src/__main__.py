@@ -1,6 +1,7 @@
 """Entry point: python3 -m src.router "your prompt here" """
-import sys
+
 import os
+import sys
 
 # Ensure FIREWORKS_API_KEY is set
 if not os.environ.get("FIREWORKS_API_KEY"):

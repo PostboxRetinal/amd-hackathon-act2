@@ -23,9 +23,16 @@ def evaluate_response(prompt: str, response: str, task: TaskCategory) -> float:
 
     # Penalize refusal / non-answers
     refusal = [
-        "cannot", "sorry", "i'm sorry", "i cannot",
-        "i don't know", "as an ai", "not able to",
-        "unable to", "do not have", "error",
+        "cannot",
+        "sorry",
+        "i'm sorry",
+        "i cannot",
+        "i don't know",
+        "as an ai",
+        "not able to",
+        "unable to",
+        "do not have",
+        "error",
     ]
     for phrase in refusal:
         if phrase in response.lower():

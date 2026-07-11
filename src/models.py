@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import os
-import yaml
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+
+import yaml
 
 
 class ModelTier(Enum):
@@ -44,7 +44,7 @@ class Model:
         )
 
 
-def load_catalog(path: Optional[str] = None) -> list[Model]:
+def load_catalog(path: str | None = None) -> list[Model]:
     """Load model catalog from YAML config file."""
     if path is None:
         path = os.path.join(os.path.dirname(__file__), "..", "config", "models.yaml")
