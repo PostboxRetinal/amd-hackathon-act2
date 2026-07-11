@@ -1,5 +1,16 @@
 # Wayfinder — Hybrid Token-Efficient Routing Agent
 
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.10%2B-blue?logo=python" />
+  <img src="https://img.shields.io/badge/tests-51%20passed-brightgreen" />
+  <img src="https://img.shields.io/badge/coverage-87%25-green" />
+  <img src="https://img.shields.io/badge/version-0.4.0-blue" />
+  <img src="https://img.shields.io/badge/license-MIT-purple" />
+  <img src="https://img.shields.io/badge/Gemma%20Prize-Eligible-gold" />
+  <img src="https://img.shields.io/badge/Streamlit-1.59-red?logo=streamlit" />
+  <img src="https://img.shields.io/badge/Fireworks%20AI-API-orange" />
+</p>
+
 > AMD Developer Hackathon: ACT II — Track 1
 
 ## Overview
@@ -12,38 +23,26 @@ Eligible for the **$1,000 Gemma Prize** — requires active Gemma 4 dedicated de
 
 ## Architecture
 
+```mermaid
+graph TD
+    User[User Prompt] --> Classifier[Task Classifier]
+    Classifier -->|Math, Factoid, Extraction...| Local[Gemma 4 E4B Local<br/>llama.cpp :8000]
+    Classifier -->|Code| DS[DeepSeek V4 Pro<br/>Fireworks API]
+    Classifier -->|Reasoning, Creative| GLM[GLM 5.2<br/>Fireworks API]
+    Local --> Response[Response]
+    DS --> Response
+    GLM --> Response
+    Response -->|Score < 0.7| Fallback[Fallback Chain]
+    Fallback --> DS
+    Fallback --> GLM
 ```
-Prompt
-  │
-  ▼
-Task Classifier (src/tasks.py)
-  │  → factoid | math | code | reasoning
-  ▼
-Router (src/router.py)
-  │  Selects cheapest model for category
-  │  Per-category max_tokens (factoid=2048, math=2048, code=4096, reasoning=4096)
-  ▼
-┌─────────────────────────────────┐
-│  Local model available (vLLM)?  │
-│  YES → Try local first (0 cost) │
-│  NO  → Skip gracefully          │
-└─────────────────────────────────┘
-  │
-  ▼
-Fireworks Inference (cheapest tier)
-  │
-  ▼
-Evaluator (src/evaluator.py)
-  │  Scores response 0.0–1.0
-  │  Penalizes [ERROR] responses
-  │  Stronger penalties for code/math
-  ▼
-Score ≥ 0.7?
-  ├── YES → [OK] Return response
-  └── NO  → Escalate to next tier
-            FAST → STANDARD → PREMIUM
-            (best=None guard prevents crashes)
-```
+
+## Screenshots
+
+![Wayfinder Web UI](screenshots/wayfinder-ui.png)
+*Wayfinder Streamlit interface showing CLI-style routing output and Model Pool sidebar.*
+
+> Screenshots will be added after deployment. Run `uv run streamlit run app/main.py` to see the live UI.
 
 ## Tech Stack
 

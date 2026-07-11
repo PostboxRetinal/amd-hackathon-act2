@@ -1,55 +1,52 @@
-# Routing Agent — Specifications
+# Routing Agent — Change Delta
 
-## Functional Requirements
+## ADDED Requirements
 
-### FR-1: Task Classification
-- **ID:** FR-001
-- **Description:** System shall classify incoming prompts into predefined categories
-- **Categories:** MATH, CODE, REASONING, FACTOID, CLASSIFICATION, SUMMARIZATION, EXTRACTION, CREATIVE, UNKNOWN
-- **Accuracy:** ≥ 80% on benchmark suite
-- **Verification:** `tests/test_tasks.py`
+### Requirement: Live Model Status from API
+The system SHALL fetch live model status from the Fireworks API /v1/models endpoint.
 
-### FR-2: Model Selection
-- **ID:** FR-002  
-- **Description:** Router shall select cheapest model tier suitable for task
-- **Logic:** CHEAP (local/vLLM) → FAST (Gemma 4 9B) → STANDARD (Gemma 4 26B) → PREMIUM (Gemma 4 31B, GLM 5.2)
-- **Source:** `config/models.yaml`
-- **Verification:** `tests/test_router.py`
+#### Scenario: Refresh button updates statuses
+- **WHEN** the user clicks the Refresh button
+- **THEN** the system calls api.fireworks.ai/inference/v1/models
+- **AND** updates the Model Pool statuses (UP/SETUP/DOWN) based on the API response
 
-### FR-3: Response Evaluation
-- **ID:** FR-003
-- **Description:** System shall evaluate response quality and escalate if insufficient
-- **Threshold:** Accept if score ≥ 0.7
-- **Escalation:** Try next tier model, repeat evaluation
-- **Verification:** `tests/test_evaluator.py`
+#### Scenario: Serverless model shows UP
+- **WHEN** the model is deepseek or glm and present in the API response
+- **THEN** the status column shows "[UP]"
 
-### FR-4: Token Tracking
-- **ID:** FR-004
-- **Description:** System shall track tokens consumed and cost per request
-- **Metrics:** tokens, cost ($), accuracy, model used, fallback indicator
-- **Output:** Per-request result dict + cumulative stats
+#### Scenario: Dedicated deploy shows SETUP
+- **WHEN** the model name contains "gemma" and is absent from the API response
+- **THEN** the status column shows "[SETUP]"
 
-### FR-5: Containerization
-- **ID:** FR-005
-- **Description:** Project must run in Docker container for standardized scoring
-- **Base:** `python:3.10-slim`
-- **Deps:** uv, PyYAML, requests, pytest
+### Requirement: Interactive Model Pool Table
+The system SHALL display the model pool as an interactive sortable table.
 
-## Non-Functional Requirements
+#### Scenario: Model pool shows as dataframe
+- **WHEN** the sidebar renders
+- **THEN** the model pool appears as st.dataframe with sortable columns
+- **AND** includes model name, status, pricing, and context length columns
 
-### NFR-1: Performance
-- **ID:** NFR-001
-- **Description:** Single inference should complete within 30s
-- **Platform:** Fireworks API (latency may vary)
+## MODIFIED Requirements
 
-### NFR-2: Configurability
-- **ID:** NFR-002
-- **Description:** Model catalog must be editable without code changes
-- **Implementation:** `config/models.yaml`
+### Requirement: Status Labels
+The status labels for models SHALL reflect real API data instead of hardcoded logic, showing UP for serverless models, SETUP for undeployed dedicated models, and DOWN for unreachable local models.
 
-## API Contract
+#### Scenario: Gemma 4 shows SETUP
+- **WHEN** the model name contains "gemma"
+- **THEN** the status column shows "[SETUP]"
 
-### `Router.route(prompt: str) -> dict`
-- **Input:** `prompt` — task description string
-- **Output:** `{response, model, tokens, cost, accuracy_score, fallback_used}`
-- **Error:** Falls back through model chain; returns best-effort result
+#### Scenario: Serverless models show UP
+- **WHEN** the model is deepseek or glm
+- **THEN** the status column shows "[UP]"
+
+### Requirement: Web Interface
+The web interface SHALL provide a Model Pool sidebar with live Refresh button and st.dataframe table display in addition to the core routing functionality.
+
+#### Scenario: Model pool renders as interactive table
+- **WHEN** the sidebar renders
+- **THEN** the model pool appears as st.dataframe with sortable columns
+- **AND** a Refresh button fetches live data from the Fireworks API
+
+#### Scenario: User routes a prompt via web UI
+- **WHEN** the user enters a prompt and clicks Route
+- **THEN** the system displays the model, accuracy, tokens, cost, and response
