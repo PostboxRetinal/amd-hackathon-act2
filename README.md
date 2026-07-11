@@ -32,21 +32,21 @@ Task → Classifier → Is it a simple task?
 
 ```bash
 # Setup environment
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+uv venv -p 3.10
+source .venv/bin/activate
+uv pip install -r requirements.txt
 
 # Set your API key
 export FIREWORKS_API_KEY="fw_..."
 
 # Run the router
-python3 -m src.router "What is the capital of Japan?"
+uv run python -m src.router "What is the capital of Japan?"
 
 # Run tests
-pytest tests/ -v
+uv run pytest tests/ -v
 
 # Benchmark models
-python3 scripts/benchmark.py
+uv run python scripts/benchmark.py
 ```
 
 ## Docker
