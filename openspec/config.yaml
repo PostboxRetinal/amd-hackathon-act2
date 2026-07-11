@@ -1,20 +1,31 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  # Hybrid Token-Efficient Routing Agent
+  ## Team 566 — AMD Developer Hackathon ACT II
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Track: 1 — Routing Agent
+  Deadline: Jul 11, 11:00 AM COT
+  Tech stack: Python 3.10, uv, Fireworks AI API, vLLM (ROCm 7.2)
+  GPU: AMD RDNA 3 (gfx1100) x 11 — 48 GB VRAM each
+  Models: Gemma 4 (9B, 26B, 31B), GLM 5.2, DeepSeek V4 Pro, Kimi K2.6
+  Repo: github.com/PostboxRetinal/amd-hackathon-act2
+
+  ## Scoring
+  - Fireworks tokens + accuracy measured on standardized environment
+  - Local inference (vLLM on AMD GPUs) = 0 Fireworks tokens
+  - Router must minimize tokens without falling below 0.7 accuracy threshold
+
+  ## Architecture
+  Task → Classifier → CHEAP (local, 0 tokens) or FAST (Fireworks API)
+                    → Evaluator (heuristic scorer)
+                    → Fallback chain: escalate to PREMIUM if score < 0.7
+
+rules:
+  proposal:
+    - Each proposal must specify: goal, model routing strategy, expected token savings
+    - Include success criteria (accuracy threshold, max tokens)
+  tasks:
+    - Tasks must be bite-sized (2-5 min each)
+    - Follow TDD where applicable
+    - All code in /mnt/share/hermes_share/files/amd-hackathon-act2/
