@@ -7,7 +7,9 @@ import os
 import time
 import urllib.request
 
+import pandas as pd
 import streamlit as st
+from streamlit.column_config import TextColumn
 
 from src.models import get_model
 from src.router import Router
@@ -148,13 +150,16 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
     effective_key = api_key or os.environ.get("FIREWORKS_API_KEY")
 
     def _on_refresh(fw_key: str) -> None:
-        data = fetch_fireworks_models(fw_key)
-        if data is not None:
-            st.session_state.live_models = data
-            st.session_state.live_updated = datetime.now().strftime("%H:%M")
-            st.session_state.pop("live_error", None)
-        else:
-            st.session_state.live_error = "API call failed"
+        try:
+            data = fetch_fireworks_models(fw_key)
+            if data is not None:
+                st.session_state.live_models = data
+                st.session_state.live_updated = datetime.now().strftime("%H:%M")
+                st.session_state.pop("live_error", None)
+            else:
+                st.session_state.live_error = "API call failed or returned empty"
+        except Exception:
+            st.session_state.live_error = "Refresh failed - check API key or network"
 
     st.markdown("**Model Pool**")
 
@@ -168,14 +173,26 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
         )
         updated = st.session_state.get("live_updated")
         if updated:
-            st.caption(f"Last updated: {updated}")
-        if "live_error" in st.session_state:
-            st.error(st.session_state.live_error)
+            st.caption(f"Updated: {updated}")
+    else:
+        updated = st.session_state.get("live_updated")
+        if updated:
+            st.caption(f"Updated: {updated}")
 
+    live_error = st.session_state.get("live_error")
+    if live_error:
+        st.error(live_error)
+
+    all_models = router._all()
     live = st.session_state.get("live_models", {})
 
+    rows = []
     for m in all_models:
-        # Determine status
+        live_info = live.get(m.name, {})
+        prompt_cost = live_info.get("prompt_cost")
+        ctx = live_info.get("context_length")
+
+        # Status determination
         if m.provider == "local":
             try:
                 import socket
@@ -183,37 +200,50 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
                 s.settimeout(0.5)
                 host, port_str = m.model_id.split("://")[1].split("/")[0].split(":")
                 port = int(port_str)
-                status_label = "[UP]" if s.connect_ex((host, port)) == 0 else "[DOWN]"
+                status = "UP" if s.connect_ex((host, port)) == 0 else "DOWN"
                 s.close()
             except Exception:
-                status_label = "[DOWN]"
+                status = "DOWN"
         elif m.provider == "fireworks" and "deployments" in m.model_id:
-            status_label = "[SETUP]"
+            status = "SETUP"
         else:
-            status_label = "[UP]"
+            status = "UP"
 
-        # Live pricing
-        live_info = live.get(m.name, {})
-        prompt_cost = live_info.get("prompt_cost")
-        ctx = live_info.get("context_length")
-
+        # Cost
         if prompt_cost is not None:
             cost_str = f"${prompt_cost:.4f}"
-            if prompt_cost != m.cost_per_1k_tokens:
-                cost_str = f"~${prompt_cost:.4f}"
         else:
             cost_str = f"${m.cost_per_1k_tokens:.4f}"
 
-        ctx_str = f"ctx: {ctx:,}" if ctx else f"ctx: {m.context_limit:,}"
+        # Context length
+        ctx_str = f"{ctx:,}" if ctx else f"{m.context_limit:,}"
 
-        tier_str = m.tier.value if hasattr(m.tier, "value") else str(m.tier)
+        # Tier
+        tier_label = m.tier.value if hasattr(m.tier, "value") else str(m.tier)
 
-        st.markdown(
-            f"<div style='font-size:13px; padding:2px 0;'>"
-            f"{status_label} <strong>{m.name}</strong> "
-            f"<span style='color:#888;'>| {tier_str} | {m.provider} | {cost_str} | {ctx_str}</span>"
-            f"</div>",
-            unsafe_allow_html=True,
+        rows.append({
+            "Status": status,
+            "Model": m.name,
+            "Tier": tier_label,
+            "Provider": m.provider,
+            "Cost": cost_str,
+            "Context": ctx_str,
+        })
+
+    if rows:
+        df = pd.DataFrame(rows)
+        st.dataframe(
+            df,
+            column_config={
+                "Status": TextColumn("Status", width="small"),
+                "Model": TextColumn("Model"),
+                "Tier": TextColumn("Tier", width="small"),
+                "Provider": TextColumn("Provider", width="small"),
+                "Cost": TextColumn("Cost", width="small"),
+                "Context": TextColumn("Context", width="small"),
+            },
+            hide_index=True,
+            width="stretch",
         )
 
 

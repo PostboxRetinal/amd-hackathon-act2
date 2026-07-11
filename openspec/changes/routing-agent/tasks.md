@@ -192,3 +192,9 @@
 **Status:** Complete
 **Action:** Increment MINOR version in pyproject.toml per SEMVER for the live refresh and status redesign features.
 **Verification:** `streamlit run` footer shows `Wayfinder v0.3.0`
+
+### T-040: Model pool table display with st.dataframe
+**Status:** Pending
+**Action:** Replace per-row st.markdown() model pool with st.dataframe() using pandas + column_config for sortable columns. Keep Refresh button and timestamp below table.
+**Files:** `app/utils.py`
+**Verification:** Model pool renders as interactive sortable table in sidebar. Refresh still works.

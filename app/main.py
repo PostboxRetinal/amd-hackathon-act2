@@ -62,13 +62,12 @@ if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = True
 
 # ---------------------------------------------------------------------------#
-#  Cached Router instantiation
+#  Router instantiation
 # ---------------------------------------------------------------------------#
 
 
-@st.cache_data(ttl=300)
 def get_router() -> Router:
-    """Cache the Router for 5 minutes to avoid reloading the model catalog."""
+    """Build a fresh Router so it picks up the current FIREWORKS_API_KEY."""
     return Router()
 
 
@@ -225,13 +224,12 @@ if route_again and st.session_state.last_prompt:
     prompt = st.session_state.last_prompt
 
 # ---------------------------------------------------------------------------#
-#  Cached Router instantiation
+#  Router instantiation (re-declared for routing section)
 # ---------------------------------------------------------------------------#
 
 
-@st.cache_data(ttl=300)
 def get_router() -> Router:
-    """Cache the Router for 5 minutes to avoid reloading the model catalog."""
+    """Build a fresh Router so it picks up the current FIREWORKS_API_KEY."""
     return Router()
 
 
@@ -266,7 +264,7 @@ if submit_triggered and prompt:
             # Add to history
             add_to_history(prompt, result, elapsed)
 
-        st.toast(f"Routed to {result['model']}", icon="[OK]")
+        st.toast(f"Routed to {result['model']}")
 
     except Exception as e:
         st.error(f"Error: {e}")
