@@ -1,4 +1,4 @@
-# Hybrid Token-Efficient Routing Agent
+# Wayfinder — Hybrid Token-Efficient Routing Agent
 
 > AMD Developer Hackathon: ACT II — Track 1
 

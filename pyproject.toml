@@ -1,5 +1,5 @@
 [project]
-name = "amd-router"
+name = "wayfinder"
 version = "0.1.0"
 description = "Hybrid Token-Efficient Routing Agent"
 requires-python = ">=3.10"

@@ -6,7 +6,7 @@ if [ $# -gt 0 ]; then
     exec "$@"
 fi
 
-echo "=== Hybrid Token-Efficient Routing Agent ==="
+echo "=== Wayfinder — Hybrid Token-Efficient Routing Agent ==="
 echo ""
 
 if [ -t 0 ]; then
