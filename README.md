@@ -137,6 +137,35 @@ The router uses a **fallback chain**: it starts with the cheapest model tier and
 - **ROCm 7.2** — AMD GPU compute platform
 - **Gemma 4** — Google DeepMind models (9B/26B/31B)
 - **Pytest** — Testing framework
+- **Ruff** — Python linter and formatter
+
+## Quality Assurance
+
+This project includes automated QA via a **pre-commit hook** that runs on every commit:
+
+```bash
+# Run QA manually (same checks as the hook):
+uv run qa
+
+# Or directly:
+bash scripts/qa.sh
+```
+
+The QA pipeline checks:
+1. `ruff check` — Lint errors, unused imports, naming conventions
+2. `ruff format --check` — Code formatting consistency
+3. `pytest` — All 45+ tests pass
+
+If any check fails, the commit is blocked. To bypass (not recommended):
+```bash
+git commit --no-verify -m "message"
+```
+
+To set up the hook in a fresh clone:
+```bash
+cp scripts/qa.sh .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
 
 ## Project Structure
 
