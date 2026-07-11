@@ -10,15 +10,15 @@ from src.tasks import TaskCategory, classify_task
 
 # Per-category max_tokens — smaller for concise tasks, larger for code/reasoning.
 MAX_TOKENS_BY_CATEGORY: dict[TaskCategory, int] = {
-    TaskCategory.FACTOID: 100,
-    TaskCategory.MATH: 150,
-    TaskCategory.CODE: 1024,
-    TaskCategory.REASONING: 1024,
-    TaskCategory.CLASSIFICATION: 256,
-    TaskCategory.EXTRACTION: 512,
-    TaskCategory.SUMMARIZATION: 512,
-    TaskCategory.CREATIVE: 512,
-    TaskCategory.UNKNOWN: 512,
+    TaskCategory.FACTOID: 2048,
+    TaskCategory.MATH: 2048,
+    TaskCategory.CODE: 4096,
+    TaskCategory.REASONING: 4096,
+    TaskCategory.CLASSIFICATION: 2048,
+    TaskCategory.EXTRACTION: 2048,
+    TaskCategory.SUMMARIZATION: 2048,
+    TaskCategory.CREATIVE: 4096,
+    TaskCategory.UNKNOWN: 2048,
 }
 
 # Default vLLM endpoint for health-check probing.

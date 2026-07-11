@@ -35,11 +35,6 @@ def classify_task(prompt: str) -> TaskCategory:
             "subtract",
             "multiply",
             "divide",
-            "+",
-            "-",
-            "*",
-            "/",
-            "%",
         ]
     ):
         return TaskCategory.MATH
