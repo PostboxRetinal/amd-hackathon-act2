@@ -164,6 +164,7 @@ class Router:
                     "cost": tokens * attempt.cost_per_1k_tokens / 1000,
                     "accuracy_score": score,
                     "fallback_used": attempt is not model,
+                    "task_category": task.value,
                 }
                 if attempt is model:
                     self.cache[cache_key] = result
@@ -180,6 +181,7 @@ class Router:
                 "cost": tokens * attempt.cost_per_1k_tokens / 1000,
                 "accuracy_score": score,
                 "fallback_used": True,
+                "task_category": task.value,
             }
 
         # All models failed — return the best of the worst
@@ -191,6 +193,7 @@ class Router:
                 "cost": 0.0,
                 "accuracy_score": 0.0,
                 "fallback_used": True,
+                "task_category": task.value,
             }
         self.stats["total_tokens"] += best["tokens"]
         self.stats["cost"] += best["cost"]

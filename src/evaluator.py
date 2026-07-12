@@ -58,7 +58,7 @@ def evaluate_response(prompt: str, response: str, task: TaskCategory) -> float:
     return max(0.0, min(1.0, score))
 
 
-def test_perfect_response(
+def check_perfect_response(
     response: str = "Quantum computing uses quantum bits (qubits) which can exist in superposition, allowing parallel computation across many states simultaneously.",
 ) -> tuple[bool, float]:
     """A good, substantive response should score high."""
@@ -66,19 +66,19 @@ def test_perfect_response(
     return score >= 0.7, score
 
 
-def test_empty_response(response: str = "") -> tuple[bool, float]:
+def check_empty_response(response: str = "") -> tuple[bool, float]:
     """An empty response should score 0.0."""
     score = evaluate_response("What is 2+2?", response, TaskCategory.MATH)
     return score == 0.0, score
 
 
-def test_error_response(response: str = "[ERROR]") -> tuple[bool, float]:
+def check_error_response(response: str = "[ERROR]") -> tuple[bool, float]:
     """An [ERROR] response should score 0.0."""
     score = evaluate_response("What is 2+2?", response, TaskCategory.MATH)
     return score == 0.0, score
 
 
-def test_refusal_penalty(
+def check_refusal_penalty(
     response: str = "I'm sorry, but I cannot help with that request.",
 ) -> tuple[bool, float]:
     """A refusal response should be penalized."""
@@ -86,7 +86,7 @@ def test_refusal_penalty(
     return score < 1.0, score
 
 
-def test_code_contains_code(
+def check_code_contains_code(
     response: str = "Here is your function:\n```python\ndef hello():\n    print('hello')\n```",
 ) -> tuple[bool, float]:
     """A code response with code blocks should not be penalized for missing code."""
@@ -94,19 +94,19 @@ def test_code_contains_code(
     return score >= 0.7, score
 
 
-def test_code_missing_code(response: str = "Sure, I can help with that.") -> tuple[bool, float]:
+def check_code_missing_code(response: str = "Sure, I can help with that.") -> tuple[bool, float]:
     """A code response without any code markers should be penalized."""
     score = evaluate_response("Write a function", response, TaskCategory.CODE)
     return score < 0.7, score
 
 
-def test_math_no_numbers(response: str = "The answer is four.") -> tuple[bool, float]:
+def check_math_no_numbers(response: str = "The answer is four.") -> tuple[bool, float]:
     """A math response without any digits should be penalized."""
     score = evaluate_response("What is two plus two?", response, TaskCategory.MATH)
     return score < 0.7, score
 
 
-def test_factoid_too_long(
+def check_factoid_too_long(
     response: str = "The capital of France is Paris. " * 20,
 ) -> tuple[bool, float]:
     """A factoid response that is too long should be penalized."""
@@ -114,7 +114,7 @@ def test_factoid_too_long(
     return score < 1.0, score
 
 
-def test_exact_sentence_count(response: str, expected: int = 2) -> tuple[bool, float]:
+def check_exact_sentence_count(response: str, expected: int = 2) -> tuple[bool, float]:
     """Check the response has exactly `expected` sentences."""
     sentences = [
         s.strip() for s in response.replace("? ", ".").replace("! ", ".").split(".") if s.strip()
@@ -124,7 +124,7 @@ def test_exact_sentence_count(response: str, expected: int = 2) -> tuple[bool, f
     return False, 0.0
 
 
-def test_bullet_count_and_word_length(
+def check_bullet_count_and_word_length(
     response: str, expected_bullets: int = 3, max_words: int = 15
 ) -> tuple[bool, float]:
     """Check the response has exactly `expected_bullets` bullet points, each under `max_words` words."""
@@ -140,14 +140,14 @@ def test_bullet_count_and_word_length(
 
 
 _ALL_TESTS = [
-    test_perfect_response,
-    test_empty_response,
-    test_error_response,
-    test_refusal_penalty,
-    test_code_contains_code,
-    test_code_missing_code,
-    test_math_no_numbers,
-    test_factoid_too_long,
-    test_exact_sentence_count,
-    test_bullet_count_and_word_length,
+    check_perfect_response,
+    check_empty_response,
+    check_error_response,
+    check_refusal_penalty,
+    check_code_contains_code,
+    check_code_missing_code,
+    check_math_no_numbers,
+    check_factoid_too_long,
+    check_exact_sentence_count,
+    check_bullet_count_and_word_length,
 ]
