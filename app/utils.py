@@ -19,20 +19,15 @@ from src.tasks import TaskCategory
 
 def _on_refresh(fw_key: str) -> None:
     """Refresh callback: fetch live model data from Fireworks API."""
-    print("[DEBUG] _on_refresh called with key=", fw_key[:8] + "..." if fw_key else "None", flush=True)
     try:
         data = fetch_fireworks_models(fw_key)
-        print("[DEBUG] fetch returned:", type(data).__name__, flush=True)
         if data is not None:
             st.session_state.live_models = data
             st.session_state.live_updated = datetime.now().strftime("%H:%M")
             st.session_state.pop("live_error", None)
-            print("[DEBUG] session state updated, available_ids type:", type(data.get("available_ids")).__name__, flush=True)
         else:
             st.session_state.live_error = "API call failed or returned empty"
-            print("[DEBUG] API returned None", flush=True)
     except Exception as e:
-        print("[DEBUG] _on_refresh EXCEPTION:", type(e).__name__, e, flush=True)
         import traceback
         traceback.print_exc()
         st.session_state.live_error = "Refresh failed - check API key or network"
@@ -193,16 +188,13 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
 
         live_info = live_pricing.get(m.name, {})
 
-        if live_info:
-            prompt_cost = live_info.get("prompt_cost", 0)
-            completion_cost = live_info.get("completion_cost", 0)
-            cost_prompt = f"${prompt_cost:.4f}" if prompt_cost else "N/A"
-            cost_completion = f"${completion_cost:.4f}" if completion_cost else "N/A"
-            cost_str = f"{cost_prompt} / {cost_completion}"
-            ctx = live_info.get("context_length")
-        else:
-            cost_str = f"${m.cost_per_1k_tokens:.4f}/1K"
-            ctx = m.context_limit
+        # Always use static pricing and context from config
+        cost_str = f"${m.cost_per_1k_tokens:.4f}/1K"
+        ctx = m.context_limit
+
+        # Use live data only for model ID presence (status check)
+        live_id = live_info.get("id") if live_info else None
+        _ = live_id  # available for future use
 
         ctx_str = f"{ctx:,}" if ctx else f"{m.context_limit:,}"
         tier_label = m.tier.value if hasattr(m.tier, "value") else str(m.tier)

@@ -4,27 +4,41 @@ from __future__ import annotations
 
 import os
 import sys
+import traceback
+
+# Catch-all: log any uncaught exception to crash.log
+_log_file = os.path.join(os.path.dirname(__file__), "crash.log")
+
+
+def _excepthook(typ, val, tb):
+    with open(_log_file, "a") as f:
+        f.write(f"\n{'='*60}\nCRASH at {__import__('datetime').datetime.now()}\n")
+        traceback.print_exception(typ, val, tb, file=f)
+    traceback.print_exception(typ, val, tb)
+    sys.stderr.flush()
+
+
+sys.excepthook = _excepthook
+
 import time
 from pathlib import Path
+from datetime import datetime
 
 import streamlit as st
 
-# Ensure src/ is importable
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Must be the first st call
+st.set_page_config(
+    page_title="Wayfinder",
+    page_icon=None,
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
-# Read version from package metadata (SEMVER)
-_VERSIONS = {"wayfinder": "0.4.0"}
-try:
-    from importlib.metadata import version as _pkg_ver
-    _VERSIONS["wayfinder"] = _pkg_ver("wayfinder")
-except Exception:
-    pass
-VERSION = _VERSIONS.get("wayfinder", "0.2.0")
+# ---------------------------------------------------------------------------#
+#  Imports (after set_page_config per Streamlit rules)
+# ---------------------------------------------------------------------------#
 
-from src.router import Router
-from src.tasks import TaskCategory, classify_task
-
-from app.utils import (
+from app.utils import (  # noqa: E402
     add_to_history,
     display_as_cli,
     display_metrics,
@@ -33,36 +47,37 @@ from app.utils import (
     display_response,
     task_badge,
 )
+from src.router import Router  # noqa: E402
+from src.tasks import TaskCategory  # noqa: E402
 
 # ---------------------------------------------------------------------------#
-#  Page config
+#  VERSION
 # ---------------------------------------------------------------------------#
 
-st.set_page_config(
-    page_title="Wayfinder",
-    page_icon=None,
-    layout="wide",
-)
+try:
+    from importlib.metadata import version
+
+    VERSION = version("wayfinder")
+except ImportError:
+    VERSION = "0.4.0"
 
 # ---------------------------------------------------------------------------#
-#  Session state init
+#  Session state defaults
 # ---------------------------------------------------------------------------#
 
-if "history" not in st.session_state:
-    st.session_state.history = []
-if "last_result" not in st.session_state:
-    st.session_state.last_result = None
-if "last_prompt" not in st.session_state:
-    st.session_state.last_prompt = ""
-if "last_elapsed" not in st.session_state:
-    st.session_state.last_elapsed = 0.0
-if "last_task" not in st.session_state:
-    st.session_state.last_task = None
-if "dark_mode" not in st.session_state:
-    st.session_state.dark_mode = True
+for key, default in [
+    ("dark_mode", False),
+    ("history", []),
+    ("last_result", None),
+    ("last_prompt", ""),
+    ("last_elapsed", 0.0),
+    ("last_task", None),
+]:
+    if key not in st.session_state:
+        st.session_state[key] = default
 
 # ---------------------------------------------------------------------------#
-#  Router instantiation
+#  Router factory
 # ---------------------------------------------------------------------------#
 
 
@@ -81,6 +96,7 @@ with st.sidebar:
     api_key = st.text_input(
         "FIREWORKS_API_KEY",
         type="password",
+        key="api_key",
         help="Required for Fireworks AI models",
     )
 
@@ -92,97 +108,57 @@ with st.sidebar:
 
     st.divider()
 
-    # Model pool
+    # Model Pool with live data
     if api_key:
         router = get_router()
         display_model_pool(router, api_key)
 
     st.divider()
 
-    # Query history
-    st.subheader("Query History")
-    with st.container(height=400):
-        if st.session_state.history:
-            for i, entry in enumerate(reversed(st.session_state.history)):
-                idx = len(st.session_state.history) - i
-                label = entry["prompt"][:60]
-                if len(entry["prompt"]) > 60:
-                    label += "..."
-                with st.expander(f"#{idx} [{entry['timestamp']}] {label}", expanded=False):
-                    r = entry["result"]
-                    st.markdown(f"**Model:** {r['model']}")
-                    st.markdown(f"**Accuracy:** {r['accuracy_score']:.2f}")
-                    st.markdown(f"**Tokens:** {r['tokens']}")
-                    st.markdown(f"**Cost:** ${r['cost']:.6f}")
-                    st.markdown(f"**Fallback:** {'Yes' if r['fallback_used'] else 'No'}")
-                    st.markdown(f"**Time:** {entry['elapsed']:.1f}s")
-                    st.caption(entry["prompt"])
-        else:
-            st.caption("No queries yet.")
-
-    st.divider()
-    st.caption(
-        "Wayfinder distributes prompts across 3 model tiers "
-        "based on task category. Built with Python, uv, and Fireworks AI."
-    )
+    # History panel
+    st.markdown("**History**")
+    if st.session_state.history:
+        for i, entry in enumerate(reversed(st.session_state.history)):
+            idx = len(st.session_state.history) - i
+            with st.container(border=True):
+                st.markdown(f"**#{idx}** {entry['prompt'][:60]}...")
+                cols = st.columns(4)
+                cols[0].metric("Model", entry["model"])
+                cols[1].metric("Tokens", entry["tokens"])
+                cols[2].metric("Cost", f"${entry['cost']:.6f}")
+                cols[3].metric("Time", f"{entry['elapsed']}s")
+    else:
+        st.caption("No history yet.")
 
 # ---------------------------------------------------------------------------#
-#  Dark / light mode CSS
-# ---------------------------------------------------------------------------#
-
-if st.session_state.dark_mode:
-    bg_color = "#0e1117"
-    text_color = "#fafafa"
-    card_bg = "#1a1a2e"
-    border_color = "#33334d"
-else:
-    bg_color = "#ffffff"
-    text_color = "#1a1a2e"
-    card_bg = "#f0f2f6"
-    border_color = "#d0d0e0"
-
-st.markdown(
-    f"""
-    <style>
-    .stApp {{
-        background-color: {bg_color};
-        color: {text_color};
-    }}
-    .cli-card {{
-        background-color: {card_bg};
-        border: 1px solid {border_color};
-        border-radius: 8px;
-        padding: 16px;
-        margin: 8px 0;
-    }}
-    .task-badge {{
-        display: inline-block;
-        background-color: {card_bg};
-        border: 1px solid {border_color};
-        border-radius: 12px;
-        padding: 4px 12px;
-        font-size: 14px;
-        margin: 4px 0;
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-# ---------------------------------------------------------------------------#
-#  Header
+#  Main content
 # ---------------------------------------------------------------------------#
 
 st.title("Wayfinder")
-st.markdown(
-    "**Hybrid Token-Efficient Routing Agent** | Task-aware model selection "
-    "across Gemma 4, DeepSeek V4 Pro, and GLM 5.2."
-)
-st.markdown("Simple & clean pytest coverage over 80%, functional no AI-slop, straight to the point ;)")
 
-# ---------------------------------------------------------------------------#
-#  API key check
-# ---------------------------------------------------------------------------#
+# Apply dynamic theme
+if st.session_state.dark_mode:
+    st.markdown(
+        """
+    <style>
+    .stApp { background-color: #0e1117; color: #e0e0e0; }
+    .cli-card { background-color: #1a1d24; border: 1px solid #333; }
+    .task-badge { font-size: 0.9rem; }
+    </style>
+    """,
+        unsafe_allow_html=True,
+    )
+else:
+    st.markdown(
+        """
+    <style>
+    .stApp { background-color: #ffffff; color: #1a1a2e; }
+    .cli-card { background-color: #f5f5f5; border: 1px solid #ddd; }
+    .task-badge { font-size: 0.9rem; }
+    </style>
+    """,
+        unsafe_allow_html=True,
+    )
 
 if not api_key:
     st.warning("Enter your Fireworks API key in the sidebar to start routing.")
@@ -198,67 +174,59 @@ with st.form("route_form"):
     prompt = st.text_area(
         "Enter your prompt",
         placeholder="e.g., What is the capital of Japan?",
-        height=100,
-        key="prompt_input",
     )
-    routed = st.form_submit_button("Route", type="primary", use_container_width=True)
-
-st.caption("Tip: Press Ctrl+Enter (Cmd+Enter on Mac) to submit.")
-
-route_again = st.button(
-    "Route Again",
-    use_container_width=True,
-    disabled=st.session_state.last_result is None,
-    help="Re-run the last prompt",
-)
-
-# Ctrl+Enter handling: Streamlit text_area submits on Ctrl+Enter by default
-# when using the key parameter. We detect submit via button or session state.
-
-submit_triggered = routed or route_again
-
-# If "Route Again" is clicked, use the last prompt
-if route_again and st.session_state.last_prompt:
-    prompt = st.session_state.last_prompt
+    submitted = st.form_submit_button("Route", use_container_width=True)
 
 # ---------------------------------------------------------------------------#
 #  Routing logic
 # ---------------------------------------------------------------------------#
 
-if submit_triggered and prompt:
-    start = time.time()
-    try:
-        with st.status("Routing prompt...", expanded=True) as status:
-            status.update(label="Classifying task...")
-            task = classify_task(prompt)
+router = get_router()
+result = None
+elapsed = 0.0
+submit_triggered = submitted and prompt
 
-            status.update(label=f"Selecting model for {task.value}...")
-            router = get_router()
+if submit_triggered:
+    with st.status("Routing prompt...", expanded=True) as status:
+        start = time.time()
 
-            status.update(label="Routing through model chain...")
+        status.update(label="Classifying task...")
+
+        status.update(label="Selecting model...")
+
+        try:
             result = router.route(prompt)
+        except Exception as e:
+            st.error(f"Error: {e}")
+            st.stop()
 
-            status.update(label="Evaluating response...")
-            elapsed = time.time() - start
+        # Extract task from router result (single source of truth)
+        task_value = result.get("task_category")
+        if task_value:
+            try:
+                task = TaskCategory(task_value)
+            except ValueError:
+                task = None
+        else:
+            task = None
 
-            status.update(label="Done!", state="complete")
+        status.update(label="Evaluating response...")
+        elapsed = time.time() - start
 
-            # Persist to session state
-            st.session_state.last_result = result
-            st.session_state.last_prompt = prompt
-            st.session_state.last_elapsed = elapsed
-            st.session_state.last_task = task
+        status.update(label="Done!", state="complete")
 
-            # Add to history
-            add_to_history(prompt, result, elapsed)
+        # Persist to session state
+        st.session_state.last_result = result
+        st.session_state.last_prompt = prompt
+        st.session_state.last_elapsed = elapsed
+        st.session_state.last_task = task
 
-        st.toast(f"Routed to {result['model']}")
+        # Add to history
+        add_to_history(prompt, result, elapsed)
 
-    except Exception as e:
-        st.error(f"Error: {e}")
-        st.stop()
+    st.toast(f"Routed to {result['model']}")
 
-elif submit_triggered and not prompt:
+elif submitted and not prompt:
     st.warning("Enter a prompt first.")
     st.stop()
 
@@ -266,9 +234,9 @@ elif submit_triggered and not prompt:
 #  Display results (from session state so they persist across reruns)
 # ---------------------------------------------------------------------------#
 
-result = st.session_state.last_result
-elapsed = st.session_state.last_elapsed
-task = st.session_state.last_task
+result = st.session_state.get("last_result")
+elapsed = st.session_state.get("last_elapsed")
+task = st.session_state.get("last_task")
 
 if result is not None:
     # Task classification badge
@@ -305,5 +273,5 @@ if result is not None:
 st.divider()
 st.caption(
     f"Wayfinder v{VERSION} -- AMD Hackathon ACT II Track 1 -- "
-    "Gemma Prize eligible (requires active Gemma 4 deploy or local llama.cpp server)"
+    "Hybrid Token-Efficient Routing Agent"
 )

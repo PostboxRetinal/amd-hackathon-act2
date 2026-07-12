@@ -27,6 +27,10 @@ ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = ["N802", "N803"]
+# Streamlit requires st.set_page_config to be the first st call, so imports
+# must follow it; _debug.py deliberately sets sys.excepthook before importing st.
+"app/main.py" = ["E402"]
+"app/_debug.py" = ["E402"]
 
 [tool.ruff.format]
 quote-style = "double"
