@@ -130,6 +130,12 @@
 **Action:** Replace cryptic `[FB]` with clear Status column (PASS/FALLBACK), add live progress per prompt to stderr, add Gemma Prize eligibility footer. Improve token display formatting.
 **Verification:** `uv run python scripts/evaluate.py` — shows live progress, Status column, Gemma Prize footer. Final benchmark: 9/14 Gemma, $0.002111, 100% acc.
 
+### T-026: Frontend Streamlit routing interface
+**Status:** Complete
+**Action:** Create interactive Streamlit frontend for Wayfinder with prompt input, model selection display, routing history, and CLI-style output.
+**Files:** `app/main.py`, `app/utils.py`
+**Verification:** `streamlit run app/main.py` launches web UI at localhost:8501.
+
 ### T-027: Submission to lablab.ai
 **Status:** Pending
 **Action:** Submit project with description, tags, and GitHub link to lablab.ai for AMD Hackathon ACT II Track 1.
