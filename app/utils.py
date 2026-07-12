@@ -6,11 +6,9 @@ import json
 import os
 import time
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timezone
 
-import pandas as pd
 import streamlit as st
-from streamlit.column_config import TextColumn
 
 from src.models import get_model
 from src.router import Router
@@ -23,7 +21,7 @@ def _on_refresh(fw_key: str) -> None:
         data = fetch_fireworks_models(fw_key)
         if data is not None:
             st.session_state.live_models = data
-            st.session_state.live_updated = datetime.now().strftime("%H:%M")
+            st.session_state.live_updated = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
             st.session_state.pop("live_error", None)
         else:
             st.session_state.live_error = "API call failed or returned empty"
@@ -226,32 +224,45 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
 
         cost_str = f"${m.cost_per_1k_tokens:.4f}/1K"
 
+        # Build hover tooltip text
+        hover_parts = [f"Model: {m.name}"]
+        if live_pricing and m.name in live_pricing:
+            info = live_pricing[m.name]
+            live_id = info.get("id", "")
+            ctx = info.get("context_length", 0)
+            if live_id:
+                hover_parts.append(f"API ID: {live_id}")
+            if ctx:
+                hover_parts.append(f"Context: {ctx:,}")
+        hover_parts.append(f"Provider: {m.provider}")
+        hover_parts.append(f"Tier: {tier_label}")
+        hover_text = " | ".join(hover_parts)
+
         st.markdown(
+            f"<span title='{hover_text}' style='cursor:help'>"
             f"<span style='color:{status_color}'>●</span> "
             f"**{m.name}**  \n"
-            f"<span style='color:gray;font-size:0.8em'>{status} | {tier_label} | {cost_str}</span>",
+            f"<span style='color:gray;font-size:0.8em'>{status} | {tier_label} | {cost_str}</span>"
+            f"</span>",
             unsafe_allow_html=True,
         )
 
     # Refresh button
     if effective_key:
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            updated = st.session_state.get("live_updated")
-            if updated:
-                st.caption(f"Updated: {updated}")
-        with col2:
-            st.button(
-                "Refresh",
-                key="fw_refresh",
-                on_click=_on_refresh,
-                args=[effective_key],
-                use_container_width=True,
-            )
+        st.button(
+            "Refresh",
+            key="fw_refresh",
+            on_click=_on_refresh,
+            args=[effective_key],
+            use_container_width=True,
+        )
+        updated = st.session_state.get("live_updated")
+        if updated:
+            st.caption(f"Last refresh: {updated}")
     else:
         updated = st.session_state.get("live_updated")
         if updated:
-            st.caption(f"Updated: {updated} (no API key)")
+            st.caption(f"Last refresh: {updated} (no API key)")
 
     live_error = st.session_state.get("live_error")
     if live_error:

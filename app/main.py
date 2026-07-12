@@ -43,7 +43,6 @@ from app.utils import (  # noqa: E402
     display_model_details,
     display_model_pool,
     display_response,
-    display_status_bar,
 )
 from src.router import Router  # noqa: E402
 from src.tasks import TaskCategory  # noqa: E402
@@ -69,7 +68,6 @@ for key, default in [
     ("last_prompt", ""),
     ("last_elapsed", 0.0),
     ("last_task", None),
-    ("dark_mode", False),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -97,8 +95,6 @@ with st.sidebar:
         key="api_key",
         help="Required for Fireworks AI models",
     )
-
-    st.session_state.dark_mode = st.toggle("Dark mode", value=st.session_state.dark_mode)
 
     st.divider()
 
@@ -171,16 +167,25 @@ elapsed = 0.0
 submit_triggered = submitted and prompt
 
 if submit_triggered:
+    progress_bar = st.progress(0, text="Classifying task...")
+
     start = time.time()
+
+    progress_bar.progress(20, text="Classifying task...")
+
+    progress_bar.progress(40, text="Selecting model...")
+
     try:
         result = router.route(prompt)
     except Exception as e:
+        progress_bar.empty()
         st.error(f"Error: {e}")
         st.stop()
 
+    progress_bar.progress(80, text="Evaluating response...")
     elapsed = time.time() - start
 
-    # Extract task from router result (single source of truth)
+    # Extract task category
     task_value = result.get("task_category")
     if task_value:
         try:
@@ -190,7 +195,10 @@ if submit_triggered:
     else:
         task = None
 
-    # Instead of status.update, just set session state and continue
+    progress_bar.progress(100, text="Done!")
+    # Remove the progress bar after 0.5s (it will be gone on next rerun anyway)
+
+    # Persist to session state
     st.session_state.last_result = result
     st.session_state.last_prompt = prompt
     st.session_state.last_elapsed = elapsed
@@ -198,7 +206,6 @@ if submit_triggered:
     add_to_history(prompt, result, elapsed)
 
     if result is not None:
-        print(f"[ROUTE] model={result.get('model', '?')}", flush=True)
         st.toast(f"Routed to {result['model']}")
 
 elif submitted and not prompt:
@@ -213,14 +220,6 @@ result = st.session_state.get("last_result")
 elapsed = st.session_state.get("last_elapsed")
 
 if result is not None:
-    # Compact status bar after routing completes
-    display_status_bar(
-        result.get("model", "?"),
-        elapsed,
-        result.get("tokens", 0),
-        result.get("cost", 0.0),
-    )
-
     st.divider()
 
     # CLI-style output card
