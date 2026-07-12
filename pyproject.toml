@@ -1,9 +1,10 @@
 [project]
 name = "wayfinder"
-version = "0.4.1b"
+version = "0.4.0"
 description = "Hybrid Token-Efficient Routing Agent"
 requires-python = ">=3.10"
 dependencies = [
+    "python-pptx>=1.0.2",
     "pyyaml>=6.0.3",
 ]
 
@@ -52,3 +53,4 @@ dev = [
 [project.scripts]
 qa = "scripts._qa_cli:main"
 dev = "scripts._dev_cli:main"
+wayfinder = "src.__main__:main"

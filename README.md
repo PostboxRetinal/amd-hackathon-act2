@@ -146,15 +146,43 @@ export FIREWORKS_API_KEY="fw_..."
 
 ### Usage
 
-```bash
-# Run the router with a prompt
-uv run python -m src "<prompt>"
+Set your Fireworks API key:
 
-# Example
-uv run python -m src "What is the capital of Japan?"
-uv run python -m src "Write a Python function to reverse a list"
-uv run python -m src "Solve: 3x + 7 = 22"
+```bash
+export FIREWORKS_API_KEY="fw_***"
 ```
+
+Basic routing:
+
+```bash
+uv run wayfinder "What is the derivative of sin(x)?"
+```
+
+JSON output (for automated judging):
+
+```bash
+uv run wayfinder "Explain quantum entanglement" --json
+```
+
+Force a task category:
+
+```bash
+uv run wayfinder "def fib(n): return n if n <= 1 else fib(n-1) + fib(n-2)" --task code
+```
+
+Check version:
+
+```bash
+uv run wayfinder --version
+```
+
+### Web UI
+
+```bash
+uv run dev
+```
+
+Then open http://localhost:8501 in your browser.
 
 ### Evaluation
 

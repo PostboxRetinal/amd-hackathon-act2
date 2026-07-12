@@ -209,7 +209,9 @@ if submit_triggered:
         # Add to history
         add_to_history(prompt, result, elapsed)
 
-    st.toast(f"Routed to {result['model']}")
+    if result is not None:
+        print(f"[ROUTE] model={result.get('model', '?')}", flush=True)
+        st.toast(f"Routed to {result['model']}")
 
 elif submitted and not prompt:
     st.warning("Enter a prompt first.")
