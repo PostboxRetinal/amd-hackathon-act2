@@ -16,8 +16,8 @@
 </div>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/tests-43%20passed-brightgreen" />
-  <img src="https://img.shields.io/badge/coverage-77%25-green" />
+  <img src="https://img.shields.io/badge/tests-73%20passed-brightgreen" />
+  <img src="https://img.shields.io/badge/coverage-82%25-green" />
   <img src="https://img.shields.io/badge/version-0.4.0-blue" />
   <img src="https://img.shields.io/badge/Gemma%20Prize-Eligible-gold" />
 </p>
@@ -28,7 +28,7 @@
 
 - **[Task-Aware Routing]** Classifies prompts into 9 categories (MATH, CODE, REASONING, FACTOID, CLASSIFICATION, SUMMARIZATION, EXTRACTION, CREATIVE, UNKNOWN) and routes to the optimal model per task.
 - **[Token Efficient]** Cheapest model first with automatic fallback through tiers. Local Gemma 4 E4B uses 0 Fireworks tokens.
-- **[100% Accuracy]** 14/14 benchmark prompts correct at $0.002 total cost. 43 tests with 77% code coverage and pre-commit QA pipeline.
+- **[100% Accuracy]** 14/14 benchmark prompts correct at $0.002 total cost. 73 tests with 82% code coverage and pre-commit QA pipeline.
 - **[Live Pricing]** Real-time model pricing from Fireworks API via Refresh button. Sortable interactive table with UP/SETUP/DOWN status indicators.
 - **[Streamlit UI]** Full web interface with CLI-style output, query history, dark mode, Model Pool sidebar, Ctrl+Enter shortcut, and live routing status.
 - **[Dockerized]** Podman/Docker container with entrypoint passthrough. Separate Dockerfile.web for Streamlit UI. uv-based dependency management.
@@ -162,7 +162,7 @@ uv run python -m src "Solve: 3x + 7 = 22"
 uv run python scripts/evaluate.py
 ```
 
-Runs the full evaluation suite across all categories and models, producing a JSON report with scores and token counts.
+Runs the full evaluation suite across all categories and models, producing a JSON report with scores and token counts. Pass `--json` for machine-readable structured output (single JSON object per prompt) suitable for automated judging.
 
 ### Tests
 
@@ -170,7 +170,7 @@ Runs the full evaluation suite across all categories and models, producing a JSO
 uv run python3 -m pytest tests/ -v
 ```
 
-43 tests covering task classification, model catalog, evaluator, and router logic with 77% code coverage.
+73 tests covering task classification, model catalog, evaluator, and router logic with 82% code coverage.
 
 ### Benchmark Results
 
@@ -228,7 +228,7 @@ bash scripts/qa.sh
 The QA pipeline checks:
 1. `ruff check` — Lint errors, unused imports, naming conventions
 2. `ruff format --check` — Code formatting consistency
-3. `pytest --cov=src` — 43 tests, 77% coverage (threshold: 75%)
+3. `pytest --cov=src` — 73 tests, 82% coverage (threshold: 75%)
 
 If any check fails, the commit is blocked. To bypass (not recommended):
 ```bash

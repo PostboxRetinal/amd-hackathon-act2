@@ -50,10 +50,11 @@
 **Verification:** Container builds and runs tests successfully. Includes entrypoint passthrough, .dockerignore, Streamlit Dockerfile.web.
 
 ### T-010: Submission
-**Status:** Pending
+**Status:** Complete
 **Action:** Complete lablab.ai submission form
 **Deadline:** Jul 12, 3:00 PM PT
 **Items:** Title, description, video, slides, repo, Docker image
+**Verification:** Submission form completed with all required items (Title, description, video, slides, repo, Docker image)
 
 ### T-011: Fix evaluator — [ERROR] detection, stronger penalties
 **Status:** Complete
@@ -137,7 +138,7 @@
 **Verification:** `streamlit run app/main.py` launches web UI at localhost:8501.
 
 ### T-027: Submission to lablab.ai
-**Status:** Pending
+**Status:** Complete
 **Action:** Submit project with description, tags, and GitHub link to lablab.ai for AMD Hackathon ACT II Track 1.
 **Verification:** Submitted before Jul 12 3PM PT deadline
 
@@ -270,3 +271,8 @@
 **Action:** Document exact steps to run from a clean machine. Verify no local dependencies, no manual setup, no private secrets required.
 **Files:** `README.md`
 **Verification:** Fresh Ubuntu + Docker can run `docker run wayfinder <prompt>` without errors.
+
+### T-051: Final validation and documentation sync
+**Status:** Complete
+**Action:** Sync OpenSpec SDD and README to final project state. Confirm 73 tests, 82% coverage (threshold 75%), all T-001..T-050 Complete. evaluator.py 55% (untested check_* functions), models.py 100%, router.py 86%, tasks.py 90%. Docker ready, --json output, GUI/CLI aligned. Validate OpenSpec change and specs.
+**Verification:** `npx openspec validate routing-agent --type change` and `--specs` both pass; README badges show 73 tests / 82% coverage; T-001..T-051 all Complete.
