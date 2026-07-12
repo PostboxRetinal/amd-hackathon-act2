@@ -18,7 +18,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/tests-73%20passed-brightgreen" />
   <img src="https://img.shields.io/badge/coverage-82%25-green" />
-  <img src="https://img.shields.io/badge/version-0.4.0-blue" />
+  <img src="https://img.shields.io/badge/version-0.5.0-blue" />
   <img src="https://img.shields.io/badge/Gemma%20Prize-Eligible-gold" />
 </p>
 

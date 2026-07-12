@@ -1,6 +1,6 @@
 # Routing Agent — Tasks
 
-**Version:** v0.4.0
+**Version:** v0.5.0
 
 ## Task List
 
@@ -163,7 +163,7 @@
 **Verification:** `pytest tests/test_evaluator.py -v` — all pass
 
 ### T-032: Model pool + Refresh from Fireworks
-**Status:** Complete
+**Status:** Superseded by T-052/T-054
 **Action:** Add sidebar Model Pool showing all configured models with status (Ready/Paused/Down) and pricing. Add Refresh button that fetches live pricing from Fireworks API for Wayfinder's models only.
 **Verification:** Streamlit sidebar shows model list + Refresh button fetches live data
 
@@ -188,7 +188,7 @@
 **Verification:** `pytest tests/test_router.py -v` — all 28 test methods pass
 
 ### T-037: Model Pool redesign with live Refresh
-**Status:** Complete
+**Status:** Superseded by T-052/T-054
 **Action:** Rework display_model_pool() to merge static config data with live data from Fireworks API stored in st.session_state.live_models. Replace separate display_fireworks_pool() block with inline live data in each model row. On Refresh click, store API response in session state and call st.rerun().
 **Verification:** Refresh button updates pricing and context values directly in the pool rows, not in a separate block.
 
@@ -203,7 +203,7 @@
 **Verification:** `streamlit run` footer shows `Wayfinder v0.3.0`
 
 ### T-040: Model pool table display with st.dataframe
-**Status:** Complete
+**Status:** Superseded by T-052/T-054
 **Action:** Replace per-row st.markdown() model pool with st.dataframe() using pandas + column_config for sortable columns. Keep Refresh button and timestamp below table.
 **Files:** `app/utils.py`
 **Verification:** Model pool renders as interactive sortable table in sidebar. Refresh still works.
@@ -276,3 +276,33 @@
 **Status:** Complete
 **Action:** Sync OpenSpec SDD and README to final project state. Confirm 73 tests, 82% coverage (threshold 75%), all T-001..T-050 Complete. evaluator.py 55% (untested check_* functions), models.py 100%, router.py 86%, tasks.py 90%. Docker ready, --json output, GUI/CLI aligned. Validate OpenSpec change and specs.
 **Verification:** `npx openspec validate routing-agent --type change` and `--specs` both pass; README badges show 73 tests / 82% coverage; T-001..T-051 all Complete.
+
+### T-052: UI Overhaul: Sidebar restructuring
+**Status:** Complete
+**Action:** Moved API key, Model Pool, History to st.sidebar
+**Verification:** Sidebar contains API key input, Model Pool, and History controls
+
+### T-053: UI Overhaul: Mini status bar
+**Status:** Complete
+**Action:** Replaced st.status() spinner with compact inline bar
+**Verification:** Routing status renders as compact inline bar, no spinner
+
+### T-054: UI Overhaul: Model Pool cards
+**Status:** Complete
+**Action:** Replaced dataframe with colored status cards
+**Verification:** Model Pool renders as colored status cards in sidebar
+
+### T-055: UI Overhaul: History list
+**Status:** Complete
+**Action:** Replaced bordered containers with compact single-line entries
+**Verification:** History renders as compact single-line entries
+
+### T-056: UI Overhaul: Response terminal
+**Status:** Complete
+**Action:** Response styled as bordered terminal block
+**Verification:** Response area renders as bordered terminal block
+
+### T-057: Version bump
+**Status:** Complete
+**Action:** Updated SEMVER from 0.4.0 to 0.5.0
+**Verification:** `streamlit run` footer shows `Wayfinder v0.5.0`

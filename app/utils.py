@@ -83,6 +83,7 @@ def display_as_cli(result: dict, elapsed: float) -> None:
         m1.markdown("**Response Time**")
         m2.markdown("**Tokens**")
         m3.markdown("**Cost**")
+        st.markdown("<br>", unsafe_allow_html=True)
         m1.markdown(f"{elapsed:.1f}s")
         m2.markdown(f"{tokens:,}")
         m3.markdown(f"${cost:.6f}")
@@ -135,6 +136,14 @@ def display_model_details(result: dict) -> None:
             st.markdown(f"Model `{result['model']}` not found in catalog.")
 
 
+def display_status_bar(model: str, elapsed: float, tokens: int, cost: float) -> None:
+    """Show a compact status bar after routing completes."""
+    st.markdown(
+        f"**Done!** `{model}` | {elapsed:.1f}s | {tokens:,} tokens | ${cost:.6f}"
+    )
+    st.divider()
+
+
 def fetch_fireworks_models(api_key: str) -> dict | None:
     """Fetch pricing for Wayfinder's models from Fireworks AI API.
 
@@ -183,7 +192,7 @@ def fetch_fireworks_models(api_key: str) -> dict | None:
 
 
 def display_model_pool(router: Router, api_key: str | None = None) -> None:
-    """Show the pool of available models with live pricing and status."""
+    """Show model pool as compact status cards with colors."""
     if "live_models" not in st.session_state:
         st.session_state.live_models = {}
     if "live_updated" not in st.session_state:
@@ -191,90 +200,58 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
 
     all_models = router._all()
     effective_key = api_key or os.environ.get("FIREWORKS_API_KEY")
-
-    st.markdown("**Model Pool**")
-
-    all_models = router._all()
     live = st.session_state.get("live_models", {})
     live_pricing = live.get("pricing", {})
     available_ids = live.get("available_ids", set())
 
-    rows = []
     for m in all_models:
+        # Determine status
         if "gemma" in m.name.lower():
             status = "SETUP"
+            status_color = "orange"
         elif m.provider == "local":
             status = "DOWN"
+            status_color = "red"
         elif live_pricing:
             status = "UP" if m.model_id in available_ids else "SETUP"
+            status_color = "green" if status == "UP" else "orange"
         else:
             status = "UP" if "deployments" not in m.model_id else "SETUP"
+            status_color = "green" if status == "UP" else "orange"
 
-        live_info = live_pricing.get(m.name, {})
+        if m.provider == "local":
+            tier_label = "local"
+        else:
+            tier_label = m.tier.value if hasattr(m.tier, "value") else str(m.tier)
 
-        # Always use static pricing and context from config
         cost_str = f"${m.cost_per_1k_tokens:.4f}/1K"
-        ctx = m.context_limit
-
-        # Use live data only for model ID presence (status check)
-        live_id = live_info.get("id") if live_info else None
-        _ = live_id  # available for future use
-
-        ctx_str = f"{ctx:,}" if ctx else f"{m.context_limit:,}"
-        tier_label = m.tier.value if hasattr(m.tier, "value") else str(m.tier)
-
-        rows.append(
-            {
-                "Status": status,
-                "Model": m.name,
-                "Tier": tier_label,
-                "Provider": m.provider,
-                "Cost": cost_str,
-                "Context": ctx_str,
-            }
-        )
-
-    if rows:
-        df = pd.DataFrame(rows)
-        st.dataframe(
-            df,
-            column_config={
-                "Status": TextColumn("Status", width="small"),
-                "Model": TextColumn("Model"),
-                "Tier": TextColumn("Tier", width="small"),
-                "Provider": TextColumn("Provider", width="small"),
-                "Cost": TextColumn("Cost", width="small"),
-                "Context": TextColumn("Context", width="small"),
-            },
-            hide_index=True,
-            width="stretch",
-        )
 
         st.markdown(
-            '<span title="[UP] available via serverless API&#10;'
-            "[SETUP] Gemma 4 needs dedicated deployment&#10;"
-            "  activation on Fireworks dashboard&#10;"
-            '[DOWN] local server not reachable" '
-            'style="cursor:help; font-size:12px; color:#888;">'
-            "(?) Status legend</span>",
+            f"<span style='color:{status_color}'>●</span> "
+            f"**{m.name}**  \n"
+            f"<span style='color:gray;font-size:0.8em'>{status} | {tier_label} | {cost_str}</span>",
             unsafe_allow_html=True,
         )
 
+    # Refresh button
     if effective_key:
-        st.button(
-            "Refresh",
-            key="fw_refresh",
-            on_click=_on_refresh,
-            args=[effective_key],
-            use_container_width=True,
-        )
-        updated = st.session_state.get("live_updated")
-        if updated:
-            st.caption(f"Updated: {updated}")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            updated = st.session_state.get("live_updated")
+            if updated:
+                st.caption(f"Updated: {updated}")
+        with col2:
+            st.button(
+                "Refresh",
+                key="fw_refresh",
+                on_click=_on_refresh,
+                args=[effective_key],
+                use_container_width=True,
+            )
     else:
         updated = st.session_state.get("live_updated")
         if updated:
-            st.caption(f"Updated: {updated} (no API key configured)")
+            st.caption(f"Updated: {updated} (no API key)")
 
     live_error = st.session_state.get("live_error")
     if live_error:

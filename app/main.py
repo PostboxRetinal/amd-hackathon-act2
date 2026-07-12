@@ -43,6 +43,7 @@ from app.utils import (  # noqa: E402
     display_model_details,
     display_model_pool,
     display_response,
+    display_status_bar,
 )
 from src.router import Router  # noqa: E402
 from src.tasks import TaskCategory  # noqa: E402
@@ -56,7 +57,7 @@ try:
 
     VERSION = version("wayfinder")
 except ImportError:
-    VERSION = "0.4.0"
+    VERSION = "0.5.0"
 
 # ---------------------------------------------------------------------------#
 #  Session state defaults
@@ -68,6 +69,7 @@ for key, default in [
     ("last_prompt", ""),
     ("last_elapsed", 0.0),
     ("last_task", None),
+    ("dark_mode", False),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -87,7 +89,7 @@ def get_router() -> Router:
 # ---------------------------------------------------------------------------#
 
 with st.sidebar:
-    st.header("Settings")
+    st.markdown("**Wayfinder**")
 
     api_key = st.text_input(
         "FIREWORKS_API_KEY",
@@ -95,6 +97,8 @@ with st.sidebar:
         key="api_key",
         help="Required for Fireworks AI models",
     )
+
+    st.session_state.dark_mode = st.toggle("Dark mode", value=st.session_state.dark_mode)
 
     st.divider()
 
@@ -107,17 +111,13 @@ with st.sidebar:
 
     # History panel
     st.markdown("**History**")
-    if st.session_state.history:
-        for i, entry in enumerate(reversed(st.session_state.history)):
-            idx = len(st.session_state.history) - i
-            with st.container(border=True):
-                st.markdown(f"**#{idx}** {entry['prompt'][:60]}...")
-                cols = st.columns(4)
-                cols[0].metric("Model", entry["model"])
-                cols[1].metric("Tokens", entry["tokens"])
-                cols[2].metric("Cost", f"${entry['cost']:.6f}")
-                cols[3].metric("Time", f"{entry['elapsed']}s")
-    else:
+    for i, entry in enumerate(reversed(st.session_state.history)):
+        idx = len(st.session_state.history) - i
+        prompt_preview = entry['prompt'][:50] + "..." if len(entry['prompt']) > 50 else entry['prompt']
+        st.markdown(
+            f"`#{idx}` {prompt_preview} — **{entry['model']}** `{entry['elapsed']}s`"
+        )
+    if not st.session_state.history:
         st.caption("No history yet.")
 
 # ---------------------------------------------------------------------------#
@@ -171,42 +171,31 @@ elapsed = 0.0
 submit_triggered = submitted and prompt
 
 if submit_triggered:
-    with st.status("Routing prompt...", expanded=True) as status:
-        start = time.time()
+    start = time.time()
+    try:
+        result = router.route(prompt)
+    except Exception as e:
+        st.error(f"Error: {e}")
+        st.stop()
 
-        status.update(label="Classifying task...")
+    elapsed = time.time() - start
 
-        status.update(label="Selecting model...")
-
+    # Extract task from router result (single source of truth)
+    task_value = result.get("task_category")
+    if task_value:
         try:
-            result = router.route(prompt)
-        except Exception as e:
-            st.error(f"Error: {e}")
-            st.stop()
-
-        # Extract task from router result (single source of truth)
-        task_value = result.get("task_category")
-        if task_value:
-            try:
-                task = TaskCategory(task_value)
-            except ValueError:
-                task = None
-        else:
+            task = TaskCategory(task_value)
+        except ValueError:
             task = None
+    else:
+        task = None
 
-        status.update(label="Evaluating response...")
-        elapsed = time.time() - start
-
-        status.update(label="Done!", state="complete")
-
-        # Persist to session state
-        st.session_state.last_result = result
-        st.session_state.last_prompt = prompt
-        st.session_state.last_elapsed = elapsed
-        st.session_state.last_task = task
-
-        # Add to history
-        add_to_history(prompt, result, elapsed)
+    # Instead of status.update, just set session state and continue
+    st.session_state.last_result = result
+    st.session_state.last_prompt = prompt
+    st.session_state.last_elapsed = elapsed
+    st.session_state.last_task = task
+    add_to_history(prompt, result, elapsed)
 
     if result is not None:
         print(f"[ROUTE] model={result.get('model', '?')}", flush=True)
@@ -224,6 +213,14 @@ result = st.session_state.get("last_result")
 elapsed = st.session_state.get("last_elapsed")
 
 if result is not None:
+    # Compact status bar after routing completes
+    display_status_bar(
+        result.get("model", "?"),
+        elapsed,
+        result.get("tokens", 0),
+        result.get("cost", 0.0),
+    )
+
     st.divider()
 
     # CLI-style output card
