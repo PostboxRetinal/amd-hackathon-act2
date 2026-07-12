@@ -27,8 +27,9 @@ def _on_refresh(fw_key: str) -> None:
             st.session_state.pop("live_error", None)
         else:
             st.session_state.live_error = "API call failed or returned empty"
-    except Exception as e:
+    except Exception:
         import traceback
+
         traceback.print_exc()
         st.session_state.live_error = "Refresh failed - check API key or network"
 
@@ -48,28 +49,44 @@ _TASK_META: dict[TaskCategory, tuple[str, str]] = {
 
 
 def task_badge(task: TaskCategory) -> str:
-    """Return an emoji + label string for the task category."""
-    emoji, label = _TASK_META.get(task, _TASK_META[TaskCategory.UNKNOWN])
-    return f"{emoji} {label}"
+    """Return a marker + label string for the task category."""
+    marker, label = _TASK_META.get(task, _TASK_META[TaskCategory.UNKNOWN])
+    return f"{marker} {label}"
 
 
 def display_as_cli(result: dict, elapsed: float) -> None:
-    """Render result identical to CLI output from src/__main__.py."""
-    fb = "Yes" if result["fallback_used"] else "No"
-    response_preview = result["response"][:200]
-    if len(result["response"]) > 200:
-        response_preview += "..."
-    cli = (
-        f"Model:         {result['model']}\n"
-        f"Accuracy:      {result['accuracy_score']:.2f}\n"
-        f"Tokens:        {result['tokens']}\n"
-        f"Cost:          ${result['cost']:.6f}\n"
-        f"Fallback used: {fb}\n"
-        f"Time:          {elapsed:.1f}s\n"
-        "---\n"
-        f"{response_preview}"
-    )
-    st.code(cli, language="text")
+    """Render result summary as a polished, native-Streamlit output card."""
+    model = result.get("model", "?")
+    acc = float(result.get("accuracy_score", 0.0))
+    tokens = result.get("tokens", 0)
+    cost = float(result.get("cost", 0.0))
+    fb = bool(result.get("fallback_used", False))
+
+    status_label = "Fallback used" if fb else "Primary route"
+    status_color = "red" if fb else "green"
+
+    with st.container(border=True):
+        head_l, head_r = st.columns([3, 1])
+        head_l.markdown(f"**{model}**")
+        head_r.markdown(
+            f"<span style='color:{status_color}'>●</span> "
+            f"**{status_label}**",
+            unsafe_allow_html=True,
+        )
+
+        st.divider()
+
+        m1, m2, m3, m4 = st.columns(4)
+        with m1:
+            st.metric("Accuracy", f"{acc:.2f}")
+        with m2:
+            st.metric("Tokens", f"{tokens:,}")
+        with m3:
+            st.metric("Cost", f"${cost:.6f}")
+        with m4:
+            st.metric("Elapsed", f"{elapsed:.1f}s")
+
+        st.caption(f"Completed in {elapsed:.1f}s")
 
 
 def display_metrics(result: dict, elapsed: float) -> None:
@@ -88,9 +105,9 @@ def display_metrics(result: dict, elapsed: float) -> None:
 
 
 def display_response(response: str) -> None:
-    """Show the full model response."""
+    """Show the full model response in a code block."""
     st.markdown("**Response**")
-    st.markdown(response)
+    st.code(response, language="text")
 
 
 def display_model_details(result: dict) -> None:

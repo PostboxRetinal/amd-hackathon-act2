@@ -236,12 +236,7 @@ if result is not None:
 
     # CLI-style output card
     st.markdown("**CLI Output**")
-    st.markdown('<div class="cli-card">', unsafe_allow_html=True)
     display_as_cli(result, elapsed)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # Metrics row
-    display_metrics(result, elapsed)
 
     st.divider()
 
