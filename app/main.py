@@ -175,9 +175,10 @@ st.markdown(
 
 st.title("Wayfinder")
 st.markdown(
-    "**Hybrid Token-Efficient Routing Agent** -- Task-aware model selection "
+    "**Hybrid Token-Efficient Routing Agent** | Task-aware model selection "
     "across Gemma 4, DeepSeek V4 Pro, and GLM 5.2."
 )
+st.markdown("Simple & clean pytest coverage over 80%, functional no AI-slop, straight to the point ;)")
 
 # ---------------------------------------------------------------------------#
 #  API key check

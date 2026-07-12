@@ -6,6 +6,7 @@ import json
 import os
 import time
 import urllib.request
+from datetime import datetime
 
 import pandas as pd
 import streamlit as st
@@ -16,18 +17,45 @@ from src.router import Router
 from src.tasks import TaskCategory
 
 
-# Emoji badges per task category (kept in comments/data, not inline code).
+def _on_refresh(fw_key: str) -> None:
+    """Refresh callback: fetch live model data from Fireworks API."""
+    print("[DEBUG] _on_refresh called with key=", fw_key[:8] + "..." if fw_key else "None", flush=True)
+    try:
+        data = fetch_fireworks_models(fw_key)
+        print("[DEBUG] fetch returned:", type(data).__name__, flush=True)
+        if data is not None:
+            st.session_state.live_models = data
+            st.session_state.live_updated = datetime.now().strftime("%H:%M")
+            st.session_state.pop("live_error", None)
+            print("[DEBUG] session state updated, available_ids type:", type(data.get("available_ids")).__name__, flush=True)
+        else:
+            st.session_state.live_error = "API call failed or returned empty"
+            print("[DEBUG] API returned None", flush=True)
+    except Exception as e:
+        print("[DEBUG] _on_refresh EXCEPTION:", type(e).__name__, e, flush=True)
+        import traceback
+        traceback.print_exc()
+        st.session_state.live_error = "Refresh failed - check API key or network"
+
+
+# Bracket-style task markers for badge display.
 _TASK_META: dict[TaskCategory, tuple[str, str]] = {
-    TaskCategory.MATH: ("math", "Math"),
-    TaskCategory.CODE: ("code", "Code"),
-    TaskCategory.REASONING: ("brain", "Reasoning"),
-    TaskCategory.FACTOID: ("fact", "Factoid"),
-    TaskCategory.CREATIVE: ("creative", "Creative"),
-    TaskCategory.CLASSIFICATION: ("tag", "Classification"),
-    TaskCategory.SUMMARIZATION: ("doc", "Summarization"),
-    TaskCategory.EXTRACTION: ("extract", "Extraction"),
-    TaskCategory.UNKNOWN: ("question", "Unknown"),
+    TaskCategory.MATH: ("[MATH]", "Math"),
+    TaskCategory.CODE: ("[CODE]", "Code"),
+    TaskCategory.REASONING: ("[BRAIN]", "Reasoning"),
+    TaskCategory.FACTOID: ("[FACT]", "Factoid"),
+    TaskCategory.CREATIVE: ("[WAND]", "Creative"),
+    TaskCategory.CLASSIFICATION: ("[TAG]", "Classification"),
+    TaskCategory.SUMMARIZATION: ("[DOC]", "Summarization"),
+    TaskCategory.EXTRACTION: ("[EXTRACT]", "Extraction"),
+    TaskCategory.UNKNOWN: ("[?]", "Unknown"),
 }
+
+
+def task_badge(task: TaskCategory) -> str:
+    """Return an emoji + label string for the task category."""
+    emoji, label = _TASK_META.get(task, _TASK_META[TaskCategory.UNKNOWN])
+    return f"{emoji} {label}"
 
 
 def display_as_cli(result: dict, elapsed: float) -> None:
@@ -42,21 +70,11 @@ def display_as_cli(result: dict, elapsed: float) -> None:
         f"Tokens:        {result['tokens']}\n"
         f"Cost:          ${result['cost']:.6f}\n"
         f"Fallback used: {fb}\n"
-        f"Response:      {response_preview}\n"
+        f"Time:          {elapsed:.1f}s\n"
+        "---\n"
+        f"{response_preview}"
     )
     st.code(cli, language="text")
-
-
-def display_response(text: str) -> None:
-    """Show response in a code block."""
-    st.markdown("**Response:**")
-    st.code(text, language="text", wrap_lines=True)
-
-
-def task_badge(task: TaskCategory) -> str:
-    """Return an emoji + label string for the task category."""
-    emoji, label = _TASK_META.get(task, _TASK_META[TaskCategory.UNKNOWN])
-    return f"{emoji} {label}"
 
 
 def display_metrics(result: dict, elapsed: float) -> None:
@@ -74,9 +92,15 @@ def display_metrics(result: dict, elapsed: float) -> None:
         st.metric("Time", f"{elapsed:.1f}s")
 
 
+def display_response(response: str) -> None:
+    """Show the full model response."""
+    st.markdown("**Response**")
+    st.markdown(response)
+
+
 def display_model_details(result: dict) -> None:
-    """Expander with full model details from the catalog."""
-    with st.expander("Model Details", expanded=False):
+    """Show model details in an expander."""
+    with st.expander("Model Details"):
         try:
             model = get_model(result["model"])
             col1, col2 = st.columns(2)
@@ -96,11 +120,11 @@ def fetch_fireworks_models(api_key: str) -> dict | None:
     """Fetch pricing for Wayfinder's models from Fireworks AI API.
 
     Returns a dict with 'pricing' (keyed by model name) and
-    'available_ids' (set of expected model IDs found in the API response),
+    'available_ids' (list of expected model IDs found in the API response),
     filtered to only the models we use in routing.
     """
 
-    WAYFINDER_MODELS = {
+    wayfinder_models = {
         "deepseek-v4-pro": "accounts/fireworks/models/deepseek-v4-pro",
         "glm-5p2": "accounts/fireworks/models/glm-5p2",
         "gemma-4-26b": "accounts/postboxretinal/deployments/txbj700w",
@@ -121,10 +145,10 @@ def fetch_fireworks_models(api_key: str) -> dict | None:
     except Exception:
         return None
 
-    result = {"pricing": {}, "available_ids": set()}
+    result = {"pricing": {}, "available_ids": []}
     for m in data:
         mid = m.get("id", "")
-        for name, expected_id in WAYFINDER_MODELS.items():
+        for name, expected_id in wayfinder_models.items():
             if mid == expected_id or name in mid:
                 cost = m.get("pricing", {})
                 result["pricing"][name] = {
@@ -134,15 +158,13 @@ def fetch_fireworks_models(api_key: str) -> dict | None:
                     "completion_cost": cost.get("completion", 0),
                     "context_length": m.get("context_length", 0),
                 }
-                result["available_ids"].add(expected_id)
+                result["available_ids"].append(expected_id)
                 break
     return result
 
 
 def display_model_pool(router: Router, api_key: str | None = None) -> None:
     """Show the pool of available models with live pricing and status."""
-    from datetime import datetime
-
     if "live_models" not in st.session_state:
         st.session_state.live_models = {}
     if "live_updated" not in st.session_state:
@@ -150,18 +172,6 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
 
     all_models = router._all()
     effective_key = api_key or os.environ.get("FIREWORKS_API_KEY")
-
-    def _on_refresh(fw_key: str) -> None:
-        try:
-            data = fetch_fireworks_models(fw_key)
-            if data is not None:
-                st.session_state.live_models = data
-                st.session_state.live_updated = datetime.now().strftime("%H:%M")
-                st.session_state.pop("live_error", None)
-            else:
-                st.session_state.live_error = "API call failed or returned empty"
-        except Exception:
-            st.session_state.live_error = "Refresh failed - check API key or network"
 
     st.markdown("**Model Pool**")
 
@@ -172,52 +182,48 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
 
     rows = []
     for m in all_models:
-        # Determine status from live API data (if available)
-        live_available = bool(live_pricing)  # True if we have live API data
-        # All Gemma 4 models require manual setup (dedicated deploy or self-hosted)
         if "gemma" in m.name.lower():
             status = "SETUP"
         elif m.provider == "local":
             status = "DOWN"
-        elif live_available:
-            # Use API response for non-Gemma models
+        elif live_pricing:
             status = "UP" if m.model_id in available_ids else "SETUP"
         else:
-            # No live data yet - sensible defaults
             status = "UP" if "deployments" not in m.model_id else "SETUP"
 
-        # Use live pricing if available
         live_info = live_pricing.get(m.name, {})
-        prompt_cost = live_info.get("prompt_cost")
-        ctx = live_info.get("context_length")
 
-        # Cost
-        cost_str = f"${prompt_cost:.4f}" if prompt_cost else f"${m.cost_per_1k_tokens:.4f}"
+        if live_info:
+            prompt_cost = live_info.get("prompt_cost", 0)
+            completion_cost = live_info.get("completion_cost", 0)
+            cost_prompt = f"${prompt_cost:.4f}" if prompt_cost else "N/A"
+            cost_completion = f"${completion_cost:.4f}" if completion_cost else "N/A"
+            cost_str = f"{cost_prompt} / {cost_completion}"
+            ctx = live_info.get("context_length")
+        else:
+            cost_str = f"${m.cost_per_1k_tokens:.4f}/1K"
+            ctx = m.context_limit
 
-        # Context length
         ctx_str = f"{ctx:,}" if ctx else f"{m.context_limit:,}"
-
-        # Tier
         tier_label = m.tier.value if hasattr(m.tier, "value") else str(m.tier)
 
-        rows.append({
-            "Status": status,
-            "Model": m.name,
-            "Tier": tier_label,
-            "Provider": m.provider,
-            "Cost": cost_str,
-            "Context": ctx_str,
-        })
+        rows.append(
+            {
+                "Status": status,
+                "Model": m.name,
+                "Tier": tier_label,
+                "Provider": m.provider,
+                "Cost": cost_str,
+                "Context": ctx_str,
+            }
+        )
 
     if rows:
         df = pd.DataFrame(rows)
         st.dataframe(
             df,
             column_config={
-                "Status": TextColumn(
-                    "Status",
-                    width="small",
-                ),
+                "Status": TextColumn("Status", width="small"),
                 "Model": TextColumn("Model"),
                 "Tier": TextColumn("Tier", width="small"),
                 "Provider": TextColumn("Provider", width="small"),
@@ -230,7 +236,7 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
 
         st.markdown(
             '<span title="[UP] available via serverless API&#10;'
-            '[SETUP] Gemma 4 needs dedicated deployment&#10;'
+            "[SETUP] Gemma 4 needs dedicated deployment&#10;"
             "  activation on Fireworks dashboard&#10;"
             '[DOWN] local server not reachable" '
             'style="cursor:help; font-size:12px; color:#888;">'
@@ -238,7 +244,6 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
             unsafe_allow_html=True,
         )
 
-    # Refresh button (now below the table)
     if effective_key:
         st.button(
             "Refresh",
@@ -253,24 +258,29 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
     else:
         updated = st.session_state.get("live_updated")
         if updated:
-            st.caption(f"Updated: {updated}")
+            st.caption(f"Updated: {updated} (no API key configured)")
 
     live_error = st.session_state.get("live_error")
     if live_error:
         st.error(live_error)
 
 
+HISTORY_MAX = 50
+
+
 def add_to_history(prompt: str, result: dict, elapsed: float) -> None:
-    """Append a query+result to session-state history (max 5)."""
+    """Append a routing result to session history."""
     if "history" not in st.session_state:
         st.session_state.history = []
     st.session_state.history.append(
         {
             "prompt": prompt,
-            "result": result,
-            "elapsed": elapsed,
-            "timestamp": time.strftime("%H:%M:%S"),
+            "model": result.get("model", "?"),
+            "tokens": result.get("tokens", 0),
+            "cost": result.get("cost", 0.0),
+            "elapsed": round(elapsed, 2),
+            "accuracy": result.get("accuracy_score", 0.0),
         }
     )
-    if len(st.session_state.history) > 5:
-        st.session_state.history = st.session_state.history[-5:]
+    if len(st.session_state.history) > HISTORY_MAX:
+        st.session_state.history.pop(0)
