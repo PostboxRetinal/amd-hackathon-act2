@@ -39,6 +39,15 @@ The router supports both **Fireworks AI** (serverless cloud inference) and **vLL
 
 Eligible for the **$1,000 Gemma Prize** — requires active Gemma 4 dedicated deployment or local llama.cpp server.
 
+### Gemma Prize Eligibility
+
+- **Local Gemma 4 E4B** is served via llama.cpp on port 8000 (0 Fireworks tokens)
+- **Dedicated Gemma 4 26B** deployment is available on Fireworks (requires activation via dashboard)
+- To qualify, verify the local server is running:
+  ```bash
+  curl http://localhost:8000/v1/chat/completions -d '{"model":"gemma-4-e4b","messages":[{"role":"user","content":"Hello"}],"max_tokens":16}'
+  ```
+
 ## Built With
 
 ![Python](https://img.shields.io/badge/Python-3.10-3776AB?logo=python&style=for-the-badge)
@@ -256,6 +265,51 @@ amd-hackathon-act2/
 ├── entrypoint.sh
 ├── requirements.txt
 └── README.md
+```
+
+## Evaluation
+
+The AMD judging system will:
+
+1. Clone the repo
+2. Build the Docker image
+3. Run the container with task prompts
+4. Validate JSON output
+
+### Requirements for scoring
+
+- **API key:** Set `FIREWORKS_API_KEY` environment variable when running the container
+- **Output format:** JSON with fields: `task_id`, `response`, `model`, `tokens`, `cost`
+- **Runtime:** All tasks must complete within the time limit
+- **Local model:** Gemma 4 E4B local (llama.cpp) is OPTIONAL. The router falls back to API models.
+
+### JSON output mode
+
+Pass `--json` to get structured output for automated judging:
+
+```bash
+podman run --rm -e FIREWORKS_API_KEY="fw_..." wayfinder "What is the capital of Japan?" --json
+```
+
+Returns a single JSON object:
+```json
+{"task_id": "...", "response": "...", "model": "...", "tokens": 42, "cost": 0.000063, "accuracy": 1.0}
+```
+
+### Verification for clean machine
+
+```bash
+# Build the image
+podman build -t wayfinder . 2>&1 | tail -3
+
+# Run a single prompt
+podman run --rm -e FIREWORKS_API_KEY="fw_..." wayfinder "test prompt" 2>&1
+
+# Run with JSON output
+podman run --rm -e FIREWORKS_API_KEY="fw_..." wayfinder "test prompt" --json 2>&1
+
+# Run tests
+uv run pytest tests/ -v --cov=src | tail -3
 ```
 
 ## Submission

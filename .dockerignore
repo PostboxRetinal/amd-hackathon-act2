@@ -1,10 +1,11 @@
 .git/
 .venv/
+.venv-old/
 __pycache__/
 .pytest_cache/
 .coverage
-*.json
-*.md
-!.README.md
+.env
+*.egg-info/
 .hermes/
 openspec/
+screenshots/

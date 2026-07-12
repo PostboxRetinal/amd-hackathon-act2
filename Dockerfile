@@ -17,16 +17,16 @@ ENV UV_LINK_MODE=copy
 COPY pyproject.toml .
 COPY uv.lock .
 
-# Install deps
-RUN uv sync --frozen
+# Install all deps including dev (pytest, pytest-cov)
+RUN uv sync --dev --frozen
 
 # Copy source code
 COPY src/ src/
 COPY scripts/ scripts/
 COPY config/ config/
 COPY tests/ tests/
-COPY entrypoint.sh .
+COPY entrypoint.sh /entrypoint.sh
 
-RUN chmod +x entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]

@@ -224,25 +224,43 @@
 **Verification:** No visual regressions. Refresh only reruns Model Pool fragment. Typing in prompt doesn't rerun sidebar. `pytest` still passes.
 
 ### T-044: Validate against public sample tasks
-**Status:** Pending
+**Status:** Complete
 **Action:** Run all 10 AMD Hackathon sample tasks through Wayfinder router. Verify correctness, format, and fallback behavior against official judging criteria. Report accuracy and cost.
 **Files:** `tests/test_benchmark.py`
 **Verification:** All 10 tasks pass with expected output format.
 
 ### T-045: Increase FACTOID max_tokens
-**Status:** Pending
+**Status:** Complete
 **Action:** Increase FACTOID max_tokens from 2048 to 4096 for detailed factual answers.
 **Files:** `src/router.py`
 **Change:** `TaskCategory.FACTOID: 4096`
 
 ### T-046: Add format validation for summarization
-**Status:** Pending
+**Status:** Complete
 **Action:** Add evaluator checks for exact sentence count (T04) and bullet count/word length (T04b) compliance.
 **Files:** `src/evaluator.py`
 **Verification:** Summarization tasks enforce exact output format per judging requirements.
 
 ### T-047: Gemma Prize eligibility documentation
-**Status:** Pending
+**Status:** Complete
 **Action:** Verify local llama.cpp server is running for demo. Document Gemma Prize eligibility requirements in README.
 **Files:** `README.md`
 **Verification:** `curl localhost:8000/v1/models` returns 200. README mentions local Gemma 4 setup.
+
+### T-048: Pre-submission Docker validation
+**Status:** Complete
+**Action:** Verify Docker image builds, runs without local files, and produces correct output. Check: public registry, entrypoint, no hardcoded secrets.
+**Files:** `Dockerfile`, `entrypoint.sh`
+**Verification:** `podman run wayfinder "test"` returns valid response in < 30s.
+
+### T-049: Output format compliance
+**Status:** Complete
+**Action:** Validate JSON output structure matches judging spec. Ensure required fields present, valid JSON, task IDs preserved.
+**Files:** `src/cli.py` or `src/__main__.py`
+**Verification:** CLI output is valid JSON array with required fields.
+
+### T-050: Clean machine test
+**Status:** Complete
+**Action:** Document exact steps to run from a clean machine. Verify no local dependencies, no manual setup, no private secrets required.
+**Files:** `README.md`
+**Verification:** Fresh Ubuntu + Docker can run `docker run wayfinder <prompt>` without errors.

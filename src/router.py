@@ -10,7 +10,7 @@ from src.tasks import TaskCategory, classify_task
 
 # Per-category max_tokens — smaller for concise tasks, larger for code/reasoning.
 MAX_TOKENS_BY_CATEGORY: dict[TaskCategory, int] = {
-    TaskCategory.FACTOID: 2048,
+    TaskCategory.FACTOID: 4096,
     TaskCategory.MATH: 2048,
     TaskCategory.CODE: 4096,
     TaskCategory.REASONING: 4096,
