@@ -26,36 +26,12 @@
 
 ## Features
 
-<table>
-<tr>
-<td width="33%">
-<h3>Task-Aware Routing</h3>
-<p>Classifies prompts into 9 categories (MATH, CODE, REASONING, FACTOID, CLASSIFICATION, SUMMARIZATION, EXTRACTION, CREATIVE, UNKNOWN) and routes to the optimal model.</p>
-</td>
-<td width="33%">
-<h3>Token Efficient</h3>
-<p>Cheapest model first with automatic fallback. Local Gemma 4 E4B uses 0 Fireworks tokens. Task-aware model selection reduces cost.</p>
-</td>
-<td width="33%">
-<h3>100% Accuracy</h3>
-<p>14/14 benchmark prompts correct at $0.002 total cost. 51 tests with 87% code coverage and pre-commit QA pipeline.</p>
-</td>
-</tr>
-<tr>
-<td width="33%">
-<h3>Live Pricing</h3>
-<p>Real-time model pricing from Fireworks API via Refresh button. Sortable interactive table with UP/SETUP/DOWN status indicators.</p>
-</td>
-<td width="33%">
-<h3>Streamlit UI</h3>
-<p>Full web interface with CLI-style output, query history, dark mode, Model Pool sidebar, Ctrl+Enter shortcut, and live routing status.</p>
-</td>
-<td width="33%">
-<h3>Dockerized</h3>
-<p>Podman/Docker container with entrypoint passthrough. Separate Dockerfile.web for Streamlit UI. uv-based dependency management.</p>
-</td>
-</tr>
-</table>
+- **[Task-Aware Routing]** Classifies prompts into 9 categories (MATH, CODE, REASONING, FACTOID, CLASSIFICATION, SUMMARIZATION, EXTRACTION, CREATIVE, UNKNOWN) and routes to the optimal model per task.
+- **[Token Efficient]** Cheapest model first with automatic fallback through tiers. Local Gemma 4 E4B uses 0 Fireworks tokens.
+- **[100% Accuracy]** 14/14 benchmark prompts correct at $0.002 total cost. 51 tests with 87% code coverage and pre-commit QA pipeline.
+- **[Live Pricing]** Real-time model pricing from Fireworks API via Refresh button. Sortable interactive table with UP/SETUP/DOWN status indicators.
+- **[Streamlit UI]** Full web interface with CLI-style output, query history, dark mode, Model Pool sidebar, Ctrl+Enter shortcut, and live routing status.
+- **[Dockerized]** Podman/Docker container with entrypoint passthrough. Separate Dockerfile.web for Streamlit UI. uv-based dependency management.
 
 An intelligent routing agent that selects the cheapest available model for every task, minimizing token usage without sacrificing accuracy. It classifies tasks by type, runs inference on the cheapest suitable model, evaluates response quality, and falls back to larger models only when necessary.
 

@@ -101,23 +101,24 @@ with st.sidebar:
 
     # Query history
     st.subheader("Query History")
-    if st.session_state.history:
-        for i, entry in enumerate(reversed(st.session_state.history)):
-            idx = len(st.session_state.history) - i
-            label = entry["prompt"][:60]
-            if len(entry["prompt"]) > 60:
-                label += "..."
-            with st.expander(f"#{idx} [{entry['timestamp']}] {label}", expanded=False):
-                r = entry["result"]
-                st.markdown(f"**Model:** {r['model']}")
-                st.markdown(f"**Accuracy:** {r['accuracy_score']:.2f}")
-                st.markdown(f"**Tokens:** {r['tokens']}")
-                st.markdown(f"**Cost:** ${r['cost']:.6f}")
-                st.markdown(f"**Fallback:** {'Yes' if r['fallback_used'] else 'No'}")
-                st.markdown(f"**Time:** {entry['elapsed']:.1f}s")
-                st.caption(entry["prompt"])
-    else:
-        st.caption("No queries yet.")
+    with st.container(height=400):
+        if st.session_state.history:
+            for i, entry in enumerate(reversed(st.session_state.history)):
+                idx = len(st.session_state.history) - i
+                label = entry["prompt"][:60]
+                if len(entry["prompt"]) > 60:
+                    label += "..."
+                with st.expander(f"#{idx} [{entry['timestamp']}] {label}", expanded=False):
+                    r = entry["result"]
+                    st.markdown(f"**Model:** {r['model']}")
+                    st.markdown(f"**Accuracy:** {r['accuracy_score']:.2f}")
+                    st.markdown(f"**Tokens:** {r['tokens']}")
+                    st.markdown(f"**Cost:** ${r['cost']:.6f}")
+                    st.markdown(f"**Fallback:** {'Yes' if r['fallback_used'] else 'No'}")
+                    st.markdown(f"**Time:** {entry['elapsed']:.1f}s")
+                    st.caption(entry["prompt"])
+        else:
+            st.caption("No queries yet.")
 
     st.divider()
     st.caption(
@@ -192,27 +193,23 @@ os.environ["FIREWORKS_API_KEY"] = api_key
 #  Prompt input
 # ---------------------------------------------------------------------------#
 
-prompt = st.text_area(
-    "Enter your prompt",
-    placeholder="e.g., What is the capital of Japan?",
-    height=100,
-    key="prompt_input",
-)
+with st.form("route_form"):
+    prompt = st.text_area(
+        "Enter your prompt",
+        placeholder="e.g., What is the capital of Japan?",
+        height=100,
+        key="prompt_input",
+    )
+    routed = st.form_submit_button("Route", type="primary", use_container_width=True)
 
 st.caption("Tip: Press Ctrl+Enter (Cmd+Enter on Mac) to submit.")
 
-col1, col2, col3 = st.columns([1, 1, 5])
-with col1:
-    routed = st.button("Route", type="primary", use_container_width=True)
-with col2:
-    route_again = st.button(
-        "Route Again",
-        use_container_width=True,
-        disabled=st.session_state.last_result is None,
-        help="Re-run the last prompt",
-    )
-with col3:
-    pass
+route_again = st.button(
+    "Route Again",
+    use_container_width=True,
+    disabled=st.session_state.last_result is None,
+    help="Re-run the last prompt",
+)
 
 # Ctrl+Enter handling: Streamlit text_area submits on Ctrl+Enter by default
 # when using the key parameter. We detect submit via button or session state.

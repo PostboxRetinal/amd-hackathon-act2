@@ -211,3 +211,38 @@
 **Status:** Complete
 **Action:** Increment MINOR version for live API status feature.
 **Verification:** `streamlit run` footer shows `Wayfinder v0.4.0`
+
+### T-043: Streamlit UI improvements (fragments, forms, layout)
+**Status:** Complete
+**Action:** Apply validated Streamlit 1.59 patterns:
+- Wrap Model Pool in `@st.fragment` for independent rerun on Refresh
+- Wrap prompt + Route in `st.form()` to prevent sidebar reruns while typing
+- Add `layout="wide"` to `st.set_page_config`
+- Add `st.container(height=...)` for consistent history area height
+- (Optional) Material icons via `:material/icon:` for headers
+**Files:** `app/main.py`, `app/utils.py`
+**Verification:** No visual regressions. Refresh only reruns Model Pool fragment. Typing in prompt doesn't rerun sidebar. `pytest` still passes.
+
+### T-044: Validate against public sample tasks
+**Status:** Pending
+**Action:** Run all 10 AMD Hackathon sample tasks through Wayfinder router. Verify correctness, format, and fallback behavior against official judging criteria. Report accuracy and cost.
+**Files:** `tests/test_benchmark.py`
+**Verification:** All 10 tasks pass with expected output format.
+
+### T-045: Increase FACTOID max_tokens
+**Status:** Pending
+**Action:** Increase FACTOID max_tokens from 2048 to 4096 for detailed factual answers.
+**Files:** `src/router.py`
+**Change:** `TaskCategory.FACTOID: 4096`
+
+### T-046: Add format validation for summarization
+**Status:** Pending
+**Action:** Add evaluator checks for exact sentence count (T04) and bullet count/word length (T04b) compliance.
+**Files:** `src/evaluator.py`
+**Verification:** Summarization tasks enforce exact output format per judging requirements.
+
+### T-047: Gemma Prize eligibility documentation
+**Status:** Pending
+**Action:** Verify local llama.cpp server is running for demo. Document Gemma Prize eligibility requirements in README.
+**Files:** `README.md`
+**Verification:** `curl localhost:8000/v1/models` returns 200. README mentions local Gemma 4 setup.

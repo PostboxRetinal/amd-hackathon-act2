@@ -56,3 +56,98 @@ def evaluate_response(prompt: str, response: str, task: TaskCategory) -> float:
         score -= 0.5
 
     return max(0.0, min(1.0, score))
+
+
+def test_perfect_response(
+    response: str = "Quantum computing uses quantum bits (qubits) which can exist in superposition, allowing parallel computation across many states simultaneously.",
+) -> tuple[bool, float]:
+    """A good, substantive response should score high."""
+    score = evaluate_response("Explain quantum computing", response, TaskCategory.REASONING)
+    return score >= 0.7, score
+
+
+def test_empty_response(response: str = "") -> tuple[bool, float]:
+    """An empty response should score 0.0."""
+    score = evaluate_response("What is 2+2?", response, TaskCategory.MATH)
+    return score == 0.0, score
+
+
+def test_error_response(response: str = "[ERROR]") -> tuple[bool, float]:
+    """An [ERROR] response should score 0.0."""
+    score = evaluate_response("What is 2+2?", response, TaskCategory.MATH)
+    return score == 0.0, score
+
+
+def test_refusal_penalty(
+    response: str = "I'm sorry, but I cannot help with that request.",
+) -> tuple[bool, float]:
+    """A refusal response should be penalized."""
+    score = evaluate_response("Tell me about history", response, TaskCategory.FACTOID)
+    return score < 1.0, score
+
+
+def test_code_contains_code(
+    response: str = "Here is your function:\n```python\ndef hello():\n    print('hello')\n```",
+) -> tuple[bool, float]:
+    """A code response with code blocks should not be penalized for missing code."""
+    score = evaluate_response("Write a function", response, TaskCategory.CODE)
+    return score >= 0.7, score
+
+
+def test_code_missing_code(response: str = "Sure, I can help with that.") -> tuple[bool, float]:
+    """A code response without any code markers should be penalized."""
+    score = evaluate_response("Write a function", response, TaskCategory.CODE)
+    return score < 0.7, score
+
+
+def test_math_no_numbers(response: str = "The answer is four.") -> tuple[bool, float]:
+    """A math response without any digits should be penalized."""
+    score = evaluate_response("What is two plus two?", response, TaskCategory.MATH)
+    return score < 0.7, score
+
+
+def test_factoid_too_long(
+    response: str = "The capital of France is Paris. " * 20,
+) -> tuple[bool, float]:
+    """A factoid response that is too long should be penalized."""
+    score = evaluate_response("What is the capital of France?", response, TaskCategory.FACTOID)
+    return score < 1.0, score
+
+
+def test_exact_sentence_count(response: str, expected: int = 2) -> tuple[bool, float]:
+    """Check the response has exactly `expected` sentences."""
+    sentences = [
+        s.strip() for s in response.replace("? ", ".").replace("! ", ".").split(".") if s.strip()
+    ]
+    if len(sentences) == expected:
+        return True, 1.0
+    return False, 0.0
+
+
+def test_bullet_count_and_word_length(
+    response: str, expected_bullets: int = 3, max_words: int = 15
+) -> tuple[bool, float]:
+    """Check the response has exactly `expected_bullets` bullet points, each under `max_words` words."""
+    import re
+
+    bullets = re.findall(r"^[\s]*[-*+][\s]+(.+)$", response, re.MULTILINE)
+    if len(bullets) != expected_bullets:
+        return False, 0.0
+    for b in bullets:
+        if len(b.split()) > max_words:
+            return False, 0.0
+    return True, 1.0
+
+
+_ALL_TESTS = [
+    test_perfect_response,
+    test_empty_response,
+    test_error_response,
+    test_refusal_penalty,
+    test_code_contains_code,
+    test_code_missing_code,
+    test_math_no_numbers,
+    test_factoid_too_long,
+    test_exact_sentence_count,
+    test_bullet_count_and_word_length,
+]

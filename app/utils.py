@@ -165,26 +165,6 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
 
     st.markdown("**Model Pool**")
 
-    if effective_key:
-        st.button(
-            "Refresh",
-            key="fw_refresh",
-            on_click=_on_refresh,
-            args=[effective_key],
-            use_container_width=True,
-        )
-        updated = st.session_state.get("live_updated")
-        if updated:
-            st.caption(f"Updated: {updated}")
-    else:
-        updated = st.session_state.get("live_updated")
-        if updated:
-            st.caption(f"Updated: {updated}")
-
-    live_error = st.session_state.get("live_error")
-    if live_error:
-        st.error(live_error)
-
     all_models = router._all()
     live = st.session_state.get("live_models", {})
     live_pricing = live.get("pricing", {})
@@ -234,7 +214,10 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
         st.dataframe(
             df,
             column_config={
-                "Status": TextColumn("Status", width="small"),
+                "Status": TextColumn(
+                    "Status",
+                    width="small",
+                ),
                 "Model": TextColumn("Model"),
                 "Tier": TextColumn("Tier", width="small"),
                 "Provider": TextColumn("Provider", width="small"),
@@ -244,6 +227,37 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
             hide_index=True,
             width="stretch",
         )
+
+        st.markdown(
+            '<span title="[UP] available via serverless API&#10;'
+            '[SETUP] Gemma 4 needs dedicated deployment&#10;'
+            "  activation on Fireworks dashboard&#10;"
+            '[DOWN] local server not reachable" '
+            'style="cursor:help; font-size:12px; color:#888;">'
+            "(?) Status legend</span>",
+            unsafe_allow_html=True,
+        )
+
+    # Refresh button (now below the table)
+    if effective_key:
+        st.button(
+            "Refresh",
+            key="fw_refresh",
+            on_click=_on_refresh,
+            args=[effective_key],
+            use_container_width=True,
+        )
+        updated = st.session_state.get("live_updated")
+        if updated:
+            st.caption(f"Updated: {updated}")
+    else:
+        updated = st.session_state.get("live_updated")
+        if updated:
+            st.caption(f"Updated: {updated}")
+
+    live_error = st.session_state.get("live_error")
+    if live_error:
+        st.error(live_error)
 
 
 def add_to_history(prompt: str, result: dict, elapsed: float) -> None:
