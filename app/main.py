@@ -12,7 +12,7 @@ _log_file = os.path.join(os.path.dirname(__file__), "crash.log")
 
 def _excepthook(typ, val, tb):
     with open(_log_file, "a") as f:
-        f.write(f"\n{'='*60}\nCRASH at {__import__('datetime').datetime.now()}\n")
+        f.write(f"\n{'=' * 60}\nCRASH at {__import__('datetime').datetime.now()}\n")
         traceback.print_exception(typ, val, tb, file=f)
     traceback.print_exception(typ, val, tb)
     sys.stderr.flush()
@@ -21,8 +21,6 @@ def _excepthook(typ, val, tb):
 sys.excepthook = _excepthook
 
 import time
-from pathlib import Path
-from datetime import datetime
 
 import streamlit as st
 
@@ -66,7 +64,6 @@ except ImportError:
 # ---------------------------------------------------------------------------#
 
 for key, default in [
-    ("dark_mode", False),
     ("history", []),
     ("last_result", None),
     ("last_prompt", ""),
@@ -100,12 +97,6 @@ with st.sidebar:
         help="Required for Fireworks AI models",
     )
 
-    st.session_state.dark_mode = st.toggle(
-        "Dark mode",
-        value=st.session_state.dark_mode,
-        help="Toggle dark/light theme styling",
-    )
-
     st.divider()
 
     # Model Pool with live data
@@ -135,30 +126,24 @@ with st.sidebar:
 # ---------------------------------------------------------------------------#
 
 st.title("Wayfinder")
+st.markdown("**Hybrid Token-Efficient Routing Agent** | Task-aware model selection across Gemma 4, DeepSeek V4 Pro, and GLM 5.2. NO-AIslop, straight to the point.")
 
 # Apply dynamic theme
-if st.session_state.dark_mode:
-    st.markdown(
-        """
-    <style>
-    .stApp { background-color: #0e1117; color: #e0e0e0; }
-    .cli-card { background-color: #1a1d24; border: 1px solid #333; }
-    .task-badge { font-size: 0.9rem; }
-    </style>
-    """,
-        unsafe_allow_html=True,
-    )
-else:
-    st.markdown(
-        """
-    <style>
-    .stApp { background-color: #ffffff; color: #1a1a2e; }
-    .cli-card { background-color: #f5f5f5; border: 1px solid #ddd; }
-    .task-badge { font-size: 0.9rem; }
-    </style>
-    """,
-        unsafe_allow_html=True,
-    )
+st.markdown(
+    """
+<style>
+.cli-card {
+    background-color: var(--st-secondary-background-color);
+    border: 1px solid var(--st-border-color, #ddd);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    font-family: var(--st-font-family-mono, monospace);
+}
+.task-badge { font-size: 0.9rem; }
+</style>
+""",
+    unsafe_allow_html=True,
+)
 
 if not api_key:
     st.warning("Enter your Fireworks API key in the sidebar to start routing.")
@@ -272,6 +257,5 @@ if result is not None:
 
 st.divider()
 st.caption(
-    f"Wayfinder v{VERSION} -- AMD Hackathon ACT II Track 1 -- "
-    "Hybrid Token-Efficient Routing Agent"
+    f"Wayfinder v{VERSION} -- AMD Hackathon ACT II Track 1 -- Hybrid Token-Efficient Routing Agent"
 )
