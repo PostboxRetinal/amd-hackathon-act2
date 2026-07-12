@@ -55,37 +55,43 @@ def task_badge(task: TaskCategory) -> str:
 
 
 def display_as_cli(result: dict, elapsed: float) -> None:
-    """Render result summary as a polished, native-Streamlit output card."""
+    """Render result summary as a polished output card."""
     model = result.get("model", "?")
     acc = float(result.get("accuracy_score", 0.0))
     tokens = result.get("tokens", 0)
     cost = float(result.get("cost", 0.0))
     fb = bool(result.get("fallback_used", False))
 
-    status_label = "Fallback used" if fb else "Primary route"
     status_color = "red" if fb else "green"
+    acc_color = "green" if acc >= 0.7 else ("orange" if acc >= 0.4 else "red")
+    acc_str = f":{acc_color}[{acc:.2f}]"
+
+    task = st.session_state.get("last_task")
+    task_str = task_badge(task) if task is not None else task_badge(TaskCategory.UNKNOWN)
 
     with st.container(border=True):
         head_l, head_r = st.columns([3, 1])
-        head_l.markdown(f"**{model}**")
-        head_r.markdown(
-            f"<span style='color:{status_color}'>●</span> "
-            f"**{status_label}**",
+        head_l.markdown(
+            f"<span style='color:{status_color}'>●</span> **{model}**",
             unsafe_allow_html=True,
         )
+        head_r.markdown(f"Task: {task_str}")
 
         st.divider()
 
-        m1, m2, m3, m4 = st.columns(4)
-        with m1:
-            st.metric("Accuracy", f"{acc:.2f}")
-        with m2:
-            st.metric("Tokens", f"{tokens:,}")
-        with m3:
-            st.metric("Cost", f"${cost:.6f}")
-        with m4:
-            st.metric("Elapsed", f"{elapsed:.1f}s")
+        m1, m2, m3 = st.columns(3)
+        m1.markdown("**Response Time**")
+        m2.markdown("**Tokens**")
+        m3.markdown("**Cost**")
+        m1.markdown(f"{elapsed:.1f}s")
+        m2.markdown(f"{tokens:,}")
+        m3.markdown(f"${cost:.6f}")
 
+        st.divider()
+
+        st.markdown(
+            f"**Accuracy:** {acc_str}  ·  **Fallback:** {'yes' if fb else 'no'}"
+        )
         st.caption(f"Completed in {elapsed:.1f}s")
 
 
@@ -105,9 +111,10 @@ def display_metrics(result: dict, elapsed: float) -> None:
 
 
 def display_response(response: str) -> None:
-    """Show the full model response in a code block."""
+    """Show the full model response in a terminal-style block."""
     st.markdown("**Response**")
-    st.code(response, language="text")
+    with st.container(border=True):
+        st.code(response, language="text", line_numbers=False)
 
 
 def display_model_details(result: dict) -> None:

@@ -43,7 +43,6 @@ from app.utils import (  # noqa: E402
     display_model_details,
     display_model_pool,
     display_response,
-    task_badge,
 )
 from src.router import Router  # noqa: E402
 from src.tasks import TaskCategory  # noqa: E402
@@ -223,17 +222,8 @@ elif submitted and not prompt:
 
 result = st.session_state.get("last_result")
 elapsed = st.session_state.get("last_elapsed")
-task = st.session_state.get("last_task")
 
 if result is not None:
-    # Task classification badge
-    if task is not None:
-        badge = task_badge(task)
-        st.markdown(
-            f'<div class="task-badge">Task: <strong>{badge}</strong></div>',
-            unsafe_allow_html=True,
-        )
-
     st.divider()
 
     # CLI-style output card
