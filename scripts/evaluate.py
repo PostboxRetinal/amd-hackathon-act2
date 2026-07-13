@@ -137,7 +137,9 @@ def main():
     print_report(report)
 
     # Save to JSON
-    out_path = os.path.join(os.path.dirname(__file__), "..", "evaluation-report.json")
+    out_dir = os.path.join(os.path.dirname(__file__), "..", "reports")
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, "evaluation-report.json")
     with open(out_path, "w") as f:
         json.dump(report, f, indent=2)
     print(f"\nReport saved to: {out_path}")

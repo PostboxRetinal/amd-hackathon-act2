@@ -57,9 +57,8 @@ MODEL_FULL_NAMES = {
     "deepseek-v4-pro": "accounts/fireworks/models/deepseek-v4-pro",
     "gemma-4-26b": "accounts/fireworks/models/gemma-4-26b-a4b-it",
     "gemma-4-31b": "accounts/fireworks/models/gemma-4-31b-it",
-    "gemma-4-31b-it-nvfp4": "accounts/fireworks/models/gemma-4-31b-it-nvfp4",
-    "gemma-4-e4b": "accounts/fireworks/models/gemma-4-e4b",
-    "gemma-4-e4b-local": "accounts/fireworks/models/gemma-4-e4b",
+    "gemma-4-e4b": "accounts/fireworks/models/gemma-4-26b-a4b-it",
+    "gemma-4-e4b-local": "accounts/fireworks/models/gemma-4-26b-a4b-it",
 }
 
 
@@ -73,9 +72,8 @@ MODEL_DISPLAY_NAMES = {
     "deepseek-v4-pro": "DeepSeek V4 Pro",
     "gemma-4-26b": "Gemma 4 26B A4B IT",
     "gemma-4-31b": "Gemma 4 31B IT",
-    "gemma-4-31b-it-nvfp4": "Gemma 4 31B IT NVFP4",
-    "gemma-4-e4b": "Gemma 4 E4B",
-    "gemma-4-e4b-local": "Gemma 4 E4B",
+    "gemma-4-e4b": "Gemma 4 26B A4B IT",
+    "gemma-4-e4b-local": "Gemma 4 26B A4B IT",
 }
 
 
@@ -87,8 +85,7 @@ def _get_display_name(model_name: str) -> str:
 MODEL_URLS = {
     "gemma-4-26b": "https://fireworks.ai/models/fireworks/gemma-4-26b-a4b-it",
     "gemma-4-31b": "https://fireworks.ai/models/fireworks/gemma-4-31b-it",
-    "gemma-4-31b-it-nvfp4": "https://fireworks.ai/models/fireworks/gemma-4-31b-it-nvfp4",
-    "gemma-4-e4b": "https://fireworks.ai/models/fireworks/gemma-4-e4b",
+    "gemma-4-e4b": "https://fireworks.ai/models/fireworks/gemma-4-26b-a4b-it",
     "deepseek-v4-pro": "https://fireworks.ai/models/fireworks/deepseek-v4-pro",
     "glm-5p2": "https://fireworks.ai/models/fireworks/glm-5p2",
 }
@@ -216,7 +213,6 @@ def fetch_fireworks_models(api_key: str) -> dict | None:
         "glm-5p2": "accounts/fireworks/models/glm-5p2",
         "gemma-4-26b": "accounts/fireworks/models/gemma-4-26b-a4b-it",
         "gemma-4-31b": "accounts/fireworks/models/gemma-4-31b-it",
-        "gemma-4-31b-it-nvfp4": "accounts/fireworks/models/gemma-4-31b-it-nvfp4",
     }
 
     req = urllib.request.Request(
@@ -300,7 +296,7 @@ MODEL_CATEGORIES = {
     "glm-5p2": "reasoning",
     "gemma-4-31b": "general",
     "gemma-4-26b": "dedicated",
-    "gemma-4-e4b": "local (ROCm)",
+    "gemma-4-e4b": "dedicated (Fireworks)",
 }
 
 
@@ -351,8 +347,6 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
             deployment_models.append(m)
         elif "deployments" in m.model_id:
             deployment_models.append(m)
-        elif "gemma-4-31b" in m.name.lower():
-            deployment_models.append(m)
         else:
             serverless_models.append(m)
 
@@ -399,8 +393,6 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
                 dot_color = "#FFFFFF"  # white
             elif "gemma-4-26b" in m.name.lower():
                 dot_color = "#4A90D9"  # medium blue
-            elif "nvfp4" in m.name.lower():
-                dot_color = "#00D4AA"  # teal/green for Nvidia
             elif "gemma-4-31b" in m.name.lower():
                 dot_color = "#2E6CB5"  # dark blue
             elif "gemma-4-e4b" in m.name.lower():
@@ -454,8 +446,6 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
                 dot_color = "#FFFFFF"  # white
             elif "gemma-4-26b" in m.name.lower():
                 dot_color = "#4A90D9"  # medium blue
-            elif "nvfp4" in m.name.lower():
-                dot_color = "#00D4AA"  # teal/green for Nvidia
             elif "gemma-4-31b" in m.name.lower():
                 dot_color = "#2E6CB5"  # dark blue
             elif "gemma-4-e4b" in m.name.lower():

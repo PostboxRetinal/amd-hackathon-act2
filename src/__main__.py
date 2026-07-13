@@ -1,8 +1,16 @@
-"""Entry point: python3 -m src "your prompt here" --json"""
-
 import json
 import os
 import sys
+from importlib.metadata import version as _pkg_version
+
+# Check --version before API key check
+if "--version" in sys.argv:
+    try:
+        ver = _pkg_version("wayfinder")
+    except Exception:
+        ver = "0.5.0"
+    print(f"wayfinder {ver}")
+    sys.exit(0)
 
 # Ensure FIREWORKS_API_KEY is set
 if not os.environ.get("FIREWORKS_API_KEY"):
