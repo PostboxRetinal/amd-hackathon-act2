@@ -3,10 +3,10 @@ set -e
 PY=/app/.venv/bin/python
 
 if [ $# -gt 0 ]; then
-    # CLI mode: arguments provided, wayfinder
+    # CLI mode: arguments provided → run wayfinder
     exec "$PY" -m src "$@"
 else
-    # Web mode: no arguments, Streamlit UI
+    # Web mode: no arguments → run Streamlit UI
     cd /app
-    exec /app/.venv/bin/streamlit run app/main.py --server.port=8501 --server.address=0.0.0.0
+    PYTHONPATH=/app exec /app/.venv/bin/streamlit run app/main.py --server.port=8501 --server.address=0.0.0.0
 fi
