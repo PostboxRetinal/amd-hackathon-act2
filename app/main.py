@@ -52,12 +52,12 @@ from src.tasks import TaskCategory  # noqa: E402
 #  VERSION
 # ---------------------------------------------------------------------------#
 
-try:
-    from importlib.metadata import version
+from importlib.metadata import version as _pkg_version
 
-    VERSION = version("wayfinder")
-except ImportError:
-    VERSION = "0.5.0"
+try:
+    APP_VERSION = _pkg_version("wayfinder")
+except Exception:
+    APP_VERSION = "debug"
 
 # ---------------------------------------------------------------------------#
 #  Session state defaults
@@ -91,10 +91,14 @@ with st.sidebar:
     st.markdown("**Wayfinder**")
 
     # API Key with colored border based on validation state
+    # Force reset validation on every rerun if no api_key is stored
+    if "api_key" in st.session_state and not st.session_state.api_key:
+        st.session_state.api_key_validated = None
+
     key_valid = st.session_state.get("api_key_validated")
-    if key_valid:
+    if key_valid is True:
         border_color = "green"
-    elif not key_valid:
+    elif key_valid is False:
         border_color = "red"
     else:
         border_color = "#333"
@@ -115,19 +119,19 @@ with st.sidebar:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # Validate API key
-    if api_key and "api_key_validated" not in st.session_state:
+    # Validate API key (only when a key is present and not yet validated)
+    if api_key and st.session_state.get("api_key_validated") is None:
         with st.spinner("Validating API key..."):
             is_valid = validate_api_key(api_key)
             st.session_state.api_key_validated = is_valid
 
     is_valid = st.session_state.get("api_key_validated")
-    if is_valid:
+    if is_valid is True:
         st.success("API key valid")
         if st.button("Change key", key="change_key"):
             st.session_state.api_key_validated = None
             st.rerun()
-    elif not is_valid:
+    elif is_valid is False:
         st.error("API key invalid - check your key")
 
     st.divider()
@@ -326,7 +330,7 @@ if result is not None:
 
 st.divider()
 st.caption(
-    f"Wayfinder v{VERSION} -- AMD Hackathon ACT II Track 1 -- Hybrid Token-Efficient Routing Agent"
+    f"Wayfinder v{APP_VERSION} -- AMD Hackathon ACT II Track 1 -- Hybrid Token-Efficient Routing Agent"
 )
 
 # Auto-refresh history when new entries appear

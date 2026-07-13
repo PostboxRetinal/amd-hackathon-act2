@@ -365,7 +365,8 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
             )
     # Render deployments section
     if deployment_models:
-        st.markdown("**Deployments**")
+        st.markdown("")
+        st.markdown("**On-demand deployments**")
         st.markdown(
             "[Create new deployment \u2192](https://app.fireworks.ai/dashboard/deployments/create)"
         )
@@ -373,12 +374,6 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
             status, status_color, _ = _get_model_status(m, live_pricing, available_ids)
             # Prefer live pricing/context from API, fall back to static config
             live_info = live_pricing.get(m.name, {})
-            live_prompt_cost = live_info.get("prompt_cost")
-            if live_prompt_cost and float(live_prompt_cost) > 0:
-                live_cost = float(live_prompt_cost) * 1000
-                cost_str = f"${live_cost:.4f}/1K"
-            else:
-                cost_str = f"${m.cost_per_1k_tokens:.4f}/1K"
 
             live_ctx = live_info.get("context_length")
             if live_ctx and int(live_ctx) > 0:
@@ -416,7 +411,7 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
                 f"<span style='color:{dot_color}'>●</span> "
                 f"**{m.display_name}** [\u2197]({m.model_url})  \n"
                 f"<span style='color:gray;font-size:0.75em'>{full_path}</span>  \n"
-                f"<span style='color:gray;font-size:0.8em'>{cost_str} | {ctx} ctx</span>"
+                f"<span style='color:gray;font-size:0.8em'>{ctx} ctx</span>"
                 f"</span>",
                 unsafe_allow_html=True,
             )
