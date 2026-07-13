@@ -29,8 +29,8 @@
 - **[Task-Aware Routing]** Classifies prompts into 9 categories (MATH, CODE, REASONING, FACTOID, CLASSIFICATION, SUMMARIZATION, EXTRACTION, CREATIVE, UNKNOWN) and routes to the optimal model per task.
 - **[Token Efficient]** Cheapest model first with automatic fallback through tiers. Local Gemma 4 E4B uses 0 Fireworks tokens.
 - **[100% Accuracy]** 14/14 benchmark prompts correct at $0.002 total cost. 73 tests with 82% code coverage and pre-commit QA pipeline.
-- **[Live Pricing]** Real-time model pricing from Fireworks API via Refresh button. Sortable interactive table with UP/SETUP/DOWN status indicators.
-- **[Streamlit UI]** Full web interface with CLI-style output, query history, dark mode, Model Pool sidebar, Ctrl+Enter shortcut, and live routing status.
+- **[Live Pricing]** Real-time model pricing and context length from the Fireworks API via the sidebar Refresh button. Colored status cards with UP/SETUP/DOWN indicators and a LIVE badge when fresh data is loaded.
+- **[Streamlit UI]** Full web interface (v0.5.0 UI overhaul) with CLI-style output, clickable query history, dark mode, grouped Model Pool sidebar, animated routing progress bar, live Fireworks pricing, and per-model color coding.
 - **[Dockerized]** Podman/Docker container with entrypoint passthrough. Separate Dockerfile.web for Streamlit UI. uv-based dependency management.
 
 An intelligent routing agent that selects the cheapest available model for every task, minimizing token usage without sacrificing accuracy. It classifies tasks by type, runs inference on the cheapest suitable model, evaluates response quality, and falls back to larger models only when necessary.
