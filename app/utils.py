@@ -192,6 +192,20 @@ def display_status_bar(model: str, elapsed: float, tokens: int, cost: float) -> 
     st.divider()
 
 
+def validate_api_key(api_key: str) -> bool:
+    """Check if the Fireworks API key is valid by calling /v1/models."""
+    import json, urllib.request
+    req = urllib.request.Request(
+        "https://api.fireworks.ai/inference/v1/models",
+        headers={"Authorization": f"Bearer {api_key}"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
+
 def fetch_fireworks_models(api_key: str) -> dict | None:
     """Fetch pricing for Wayfinder's models from Fireworks AI API.
 
@@ -347,18 +361,17 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
 
     # Render serverless section
     if serverless_models:
-        st.markdown("**Serverless**")
         # LIVE badge if we have fresh pricing data
         has_live = any(
             live_pricing.get(m.name, {}).get("prompt_cost")
             for m in serverless_models
         )
-        if has_live:
-            st.markdown(
-                "<span style='color:#00D4AA;font-size:0.7em;border:1px solid #00D4AA;"
-                "border-radius:4px;padding:0 6px;margin-left:4px'>LIVE</span>",
-                unsafe_allow_html=True,
-            )
+        live_badge = (
+            " <span style='color:#00D4AA;font-size:0.7em;border:1px solid #00D4AA;"
+            "border-radius:4px;padding:0 6px'>LIVE</span>"
+            if has_live else ""
+        )
+        st.markdown(f"**Serverless**{live_badge}", unsafe_allow_html=True)
         for m in serverless_models:
             status, status_color, _ = _get_model_status(m, live_pricing, available_ids)
             tier_label = m.tier.value if hasattr(m.tier, "value") else str(m.tier)
@@ -383,7 +396,8 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
                 ctx = f"{m.context_limit:,}" if m.context_limit else "N/A"
                 ctx_source = "static"
 
-            hover_text = f"Model: {_get_display_name(m.name)} | Category: {category} | Provider: {m.provider} | Tier: {tier_label} | Pricing: {cost_source} | Context: {ctx_source} | Data: {cost_source}"
+            hover_parts = [f"Model: {_get_display_name(m.name)}", f"Category: {category}"]
+            hover_text = " | ".join(hover_parts)
 
             # Get full Fireworks path
             full_path = _get_model_full_name(m.name)
@@ -416,7 +430,7 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
             )
     # Render deployments section
     if deployment_models:
-        st.markdown("**Deployments**")
+        st.markdown("**On-demand Deployments**")
         st.markdown("[Create new deployment \u2192](https://app.fireworks.ai/dashboard/deployments/create)")
         for m in deployment_models:
             status, status_color, _ = _get_model_status(m, live_pricing, available_ids)
@@ -446,13 +460,7 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
             dep_state = live_dep.get("state", "")
             dep_replicas = live_dep.get("replicas", 0)
 
-            hover_parts = [f"Model: {_get_display_name(m.name)}", f"Provider: {m.provider}"]
-            if dep_state:
-                hover_parts.append(f"Status: {dep_state}")
-                hover_parts.append(f"Replicas: {dep_replicas}")
-            hover_parts.append(f"Pricing: {cost_source}")
-            hover_parts.append(f"Context: {ctx_source}")
-            hover_parts.append(f"Data: {cost_source}")
+            hover_parts = [f"Model: {_get_display_name(m.name)}", f"Category: dedicated"]
             hover_text = " | ".join(hover_parts)
 
             # Get full Fireworks path

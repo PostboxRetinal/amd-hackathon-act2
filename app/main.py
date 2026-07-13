@@ -43,6 +43,7 @@ from app.utils import (  # noqa: E402
     display_model_details,
     display_model_pool,
     display_response,
+    validate_api_key,
     _get_display_name,
 )
 from src.router import Router  # noqa: E402
@@ -90,12 +91,45 @@ def get_router() -> Router:
 with st.sidebar:
     st.markdown("**Wayfinder**")
 
+    # API Key with colored border based on validation state
+    key_valid = st.session_state.get("api_key_validated")
+    if key_valid == True:
+        border_color = "green"
+    elif key_valid == False:
+        border_color = "red"
+    else:
+        border_color = "#333"
+
+    st.markdown(
+        f"<div style='border:1px solid {border_color};border-radius:8px;padding:10px;margin-bottom:8px;'>",
+        unsafe_allow_html=True,
+    )
+
+    api_key_locked = key_valid == True
     api_key = st.text_input(
         "FIREWORKS_API_KEY",
         type="password",
         key="api_key",
+        disabled=api_key_locked,
         help="Required for Fireworks AI models",
     )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # Validate API key
+    if api_key and "api_key_validated" not in st.session_state:
+        with st.spinner("Validating API key..."):
+            is_valid = validate_api_key(api_key)
+            st.session_state.api_key_validated = is_valid
+
+    is_valid = st.session_state.get("api_key_validated")
+    if is_valid == True:
+        st.success("API key valid")
+        if st.button("Change key", key="change_key"):
+            st.session_state.api_key_validated = None
+            st.rerun()
+    elif is_valid == False:
+        st.error("API key invalid - check your key")
 
     st.divider()
 
