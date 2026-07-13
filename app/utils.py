@@ -303,118 +303,117 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
 
     # Render serverless section
     if serverless_models:
-        # LIVE badge if we have fresh pricing data
-        has_live = any(live_pricing.get(m.name, {}).get("prompt_cost") for m in serverless_models)
-        live_badge = (
-            " <span style='color:#00D4AA;font-size:0.7em;border:1px solid #00D4AA;"
-            "border-radius:4px;padding:0 6px'>LIVE</span>"
-            if has_live
-            else ""
-        )
-        st.markdown(f"**Serverless**{live_badge}", unsafe_allow_html=True)
-        for m in serverless_models:
-            status, status_color, _ = _get_model_status(m, live_pricing, available_ids)
-            category = m.category
-
-            # Prefer live pricing/context from API, fall back to static config
-            live_info = live_pricing.get(m.name, {})
-            live_prompt_cost = live_info.get("prompt_cost")
-            if live_prompt_cost and float(live_prompt_cost) > 0:
-                live_cost = float(live_prompt_cost) * 1000
-                cost_str = f"${live_cost:.4f}/1K"
-            else:
-                cost_str = f"${m.cost_per_1k_tokens:.4f}/1K"
-
-            live_ctx = live_info.get("context_length")
-            if live_ctx and int(live_ctx) > 0:
-                ctx = f"{int(live_ctx):,}"
-            else:
-                ctx = f"{m.context_limit:,}" if m.context_limit else "N/A"
-
-            hover_parts = [f"Model: {m.display_name}", f"Category: {category}"]
-            hover_text = " | ".join(hover_parts)
-
-            # Get full Fireworks path
-            full_path = m.model_id
-
-            # Color by model family
-            if "deepseek" in m.name.lower():
-                dot_color = "#7C3AED"  # purple
-            elif "glm" in m.name.lower():
-                dot_color = "#FFFFFF"  # white
-            elif "nvfp4" in m.name.lower():
-                dot_color = "#00D4AA"  # teal for Nvidia
-            elif "gemma-4-26b" in m.name.lower():
-                dot_color = "#4A90D9"  # medium blue
-            elif "gemma-4-31b" in m.name.lower():
-                dot_color = "#2E6CB5"  # dark blue
-            elif "gemma-4-e4b" in m.name.lower():
-                dot_color = "#6BB3E0"  # light blue
-            else:
-                dot_color = "#888888"  # gray fallback
-
-            # Build 3-line display
-            st.markdown(
-                f"<span title='{hover_text}' style='cursor:help'>"
-                f"<span style='color:{dot_color}'>●</span> "
-                f"**{m.display_name}** [\u2197]({m.model_url})  \n"
-                f"<span style='color:gray;font-size:0.75em'>{full_path}</span>  \n"
-                f"<span style='color:gray;font-size:0.8em'>{category} | {cost_str} | {ctx} ctx</span>"
-                f"</span>",
-                unsafe_allow_html=True,
+        with st.container(border=True):
+            # LIVE badge if we have fresh pricing data
+            has_live = any(live_pricing.get(m.name, {}).get("prompt_cost") for m in serverless_models)
+            live_badge = (
+                " <span style='color:#00D4AA;font-size:0.7em;border:1px solid #00D4AA;"
+                "border-radius:4px;padding:0 6px'>LIVE</span>"
+                if has_live
+                else ""
             )
+            st.markdown(f"**Serverless**{live_badge}", unsafe_allow_html=True)
+            for m in serverless_models:
+                status, status_color, _ = _get_model_status(m, live_pricing, available_ids)
+                category = m.category
+    
+                # Prefer live pricing/context from API, fall back to static config
+                live_info = live_pricing.get(m.name, {})
+                live_prompt_cost = live_info.get("prompt_cost")
+                if live_prompt_cost and float(live_prompt_cost) > 0:
+                    live_cost = float(live_prompt_cost) * 1000
+                    cost_str = f"${live_cost:.4f}/1K"
+                else:
+                    cost_str = f"${m.cost_per_1k_tokens:.4f}/1K"
+    
+                live_ctx = live_info.get("context_length")
+                if live_ctx and int(live_ctx) > 0:
+                    ctx = f"{int(live_ctx):,}"
+                else:
+                    ctx = f"{m.context_limit:,}" if m.context_limit else "N/A"
+    
+                hover_parts = [f"Model: {m.display_name}", f"Category: {category}"]
+                hover_text = " | ".join(hover_parts)
+    
+                # Get full Fireworks path
+                full_path = m.model_id
+    
+                # Color by model family
+                if "deepseek" in m.name.lower():
+                    dot_color = "#7C3AED"  # purple
+                elif "glm" in m.name.lower():
+                    dot_color = "#FFFFFF"  # white
+                elif "nvfp4" in m.name.lower():
+                    dot_color = "#00D4AA"  # teal for Nvidia
+                elif "gemma-4-26b" in m.name.lower():
+                    dot_color = "#4A90D9"  # medium blue
+                elif "gemma-4-31b" in m.name.lower():
+                    dot_color = "#2E6CB5"  # dark blue
+                elif "gemma-4-e4b" in m.name.lower():
+                    dot_color = "#6BB3E0"  # light blue
+                else:
+                    dot_color = "#888888"  # gray fallback
+    
+                # Build 3-line display
+                st.markdown(
+                    f"<span title='{hover_text}' style='cursor:help'>"
+                    f"<span style='color:{dot_color}'>●</span> "
+                    f"**{m.display_name}** [\u2197]({m.model_url})  \n"
+                    f"<span style='color:gray;font-size:0.75em'>{full_path}</span>  \n"
+                    f"<span style='color:gray;font-size:0.8em'>{category} | {cost_str} | {ctx} ctx</span>"
+                    f"</span>",
+                    unsafe_allow_html=True,
+                )
     # Render deployments section
     if deployment_models:
-        st.markdown("")
-        st.markdown("**On-demand deployments**")
-        st.markdown(
-            "[Create new deployment \u2192](https://app.fireworks.ai/dashboard/deployments/create)"
-        )
-        for m in deployment_models:
-            status, status_color, _ = _get_model_status(m, live_pricing, available_ids)
-            # Prefer live pricing/context from API, fall back to static config
-            live_info = live_pricing.get(m.name, {})
+        with st.container(border=True):
+            st.markdown("[**Gemma On-demand deployments**](https://app.fireworks.ai/dashboard/deployments/create)")
 
-            live_ctx = live_info.get("context_length")
-            if live_ctx and int(live_ctx) > 0:
-                ctx = f"{int(live_ctx):,}"
-            else:
-                ctx = f"{m.context_limit:,}" if m.context_limit else "N/A"
-
-            hover_parts = [f"Model: {m.display_name}", "Category: dedicated"]
-            hover_text = " | ".join(hover_parts)
-
-            # Get full Fireworks path
-            full_path = m.model_id
-
-            # Color by model family
-            if "deepseek" in m.name.lower():
-                dot_color = "#7C3AED"  # purple
-            elif "glm" in m.name.lower():
-                dot_color = "#FFFFFF"  # white
-            elif "nvfp4" in m.name.lower():
-                dot_color = "#00D4AA"  # teal for Nvidia
-            elif "gemma-4-26b" in m.name.lower():
-                dot_color = "#4A90D9"  # medium blue
-            elif "gemma-4-31b" in m.name.lower():
-                dot_color = "#2E6CB5"  # dark blue
-            elif "gemma-4-e4b" in m.name.lower():
-                dot_color = "#6BB3E0"  # light blue
-            else:
-                dot_color = "#888888"  # gray fallback
-
-            category = "dedicated"
-
-            # Build 3-line display
-            st.markdown(
-                f"<span title='{hover_text}' style='cursor:help'>"
-                f"<span style='color:{dot_color}'>●</span> "
-                f"**{m.display_name}** [\u2197]({m.model_url})  \n"
-                f"<span style='color:gray;font-size:0.75em'>{full_path}</span>  \n"
-                f"<span style='color:gray;font-size:0.8em'>{ctx} ctx</span>"
-                f"</span>",
-                unsafe_allow_html=True,
-            )
+            for m in deployment_models:
+                status, status_color, _ = _get_model_status(m, live_pricing, available_ids)
+                # Prefer live pricing/context from API, fall back to static config
+                live_info = live_pricing.get(m.name, {})
+    
+                live_ctx = live_info.get("context_length")
+                if live_ctx and int(live_ctx) > 0:
+                    ctx = f"{int(live_ctx):,}"
+                else:
+                    ctx = f"{m.context_limit:,}" if m.context_limit else "N/A"
+    
+                hover_parts = [f"Model: {m.display_name}", "Category: dedicated"]
+                hover_text = " | ".join(hover_parts)
+    
+                # Get full Fireworks path
+                full_path = m.model_id
+    
+                # Color by model family
+                if "deepseek" in m.name.lower():
+                    dot_color = "#7C3AED"  # purple
+                elif "glm" in m.name.lower():
+                    dot_color = "#FFFFFF"  # white
+                elif "nvfp4" in m.name.lower():
+                    dot_color = "#00D4AA"  # teal for Nvidia
+                elif "gemma-4-26b" in m.name.lower():
+                    dot_color = "#4A90D9"  # medium blue
+                elif "gemma-4-31b" in m.name.lower():
+                    dot_color = "#2E6CB5"  # dark blue
+                elif "gemma-4-e4b" in m.name.lower():
+                    dot_color = "#6BB3E0"  # light blue
+                else:
+                    dot_color = "#888888"  # gray fallback
+    
+                category = "dedicated"
+    
+                # Build 3-line display
+                st.markdown(
+                    f"<span title='{hover_text}' style='cursor:help'>"
+                    f"<span style='color:{dot_color}'>●</span> "
+                    f"**{m.display_name}** [\u2197]({m.model_url})  \n"
+                    f"<span style='color:gray;font-size:0.75em'>{full_path}</span>  \n"
+                    f"<span style='color:gray;font-size:0.8em'>{ctx} ctx</span>"
+                    f"</span>",
+                    unsafe_allow_html=True,
+                )
 
     # Refresh button
     if effective_key:

@@ -103,11 +103,6 @@ with st.sidebar:
     else:
         border_color = "#333"
 
-    st.markdown(
-        f"<div style='border:1px solid {border_color};border-radius:8px;padding:10px;margin-bottom:8px;'>",
-        unsafe_allow_html=True,
-    )
-
     api_key_locked = key_valid == True
     api_key = st.text_input(
         "FIREWORKS_API_KEY",
@@ -117,8 +112,6 @@ with st.sidebar:
         help="Required for Fireworks AI models",
     )
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
     # Validate API key (only when a key is present and not yet validated)
     if api_key and st.session_state.get("api_key_validated") is None:
         with st.spinner("Validating API key..."):
@@ -127,12 +120,18 @@ with st.sidebar:
 
     is_valid = st.session_state.get("api_key_validated")
     if is_valid is True:
-        st.success("API key valid")
+        st.markdown(
+            "<span style='color:#00D4AA;font-size:0.75em'>API key valid</span>",
+            unsafe_allow_html=True,
+        )
         if st.button("Change key", key="change_key"):
             st.session_state.api_key_validated = None
             st.rerun()
     elif is_valid is False:
-        st.error("API key invalid - check your key")
+        st.markdown(
+            "<span style='color:#FF4444;font-size:0.75em'>✗ API key invalid</span>",
+            unsafe_allow_html=True,
+        )
 
     st.divider()
 
@@ -307,7 +306,7 @@ elif submitted and not prompt:
 # ---------------------------------------------------------------------------#
 
 result = st.session_state.get("last_result")
-elapsed = st.session_state.get("last_elapsed")
+elapsed = st.session_state.get("last_elapsed", 0.0)
 
 if result is not None:
     st.divider()

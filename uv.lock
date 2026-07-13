@@ -1842,7 +1842,7 @@ wheels = [
 
 [[package]]
 name = "wayfinder"
-version = "0.5.6a0"
+version = "0.5.6b0"
 source = { editable = "." }
 dependencies = [
     { name = "python-pptx" },

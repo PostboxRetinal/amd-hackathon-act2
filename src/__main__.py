@@ -33,6 +33,11 @@ if "--help" in sys.argv or "-h" in sys.argv:
     print(HELP_TEXT)
     sys.exit(0)
 
+# No args: show help
+if len(sys.argv) == 1:
+    print(HELP_TEXT)
+    sys.exit(0)
+
 # Ensure FIREWORKS_API_KEY is set
 if not os.environ.get("FIREWORKS_API_KEY"):
     print("ERROR: FIREWORKS_API_KEY environment variable is required")
