@@ -29,8 +29,8 @@ Eligible for the **$1,000 Gemma Prize** — requires active Gemma 4 dedicated de
 
 ### Gemma Prize Eligibility
 
-- **Gemma 4 E4B (7.5B, Q4_K_M) (huggingface)** was benchamrked and served via llama.cpp over AMD jupyter instance ($0 while active) (check [fastfetch screenshot](/.github/assets/fastfetch.png))
-- **Gemma 4 26B A4B IT** benchmarked and served via Fireworks infrastructure (required manual replica activation) [and almost exhausted the $50 hackathon budget](./github/assets/gemma4_fireworks.png)
+- **Gemma 4 E4B (7.5B, Q4_K_M) (huggingface)** was benchamrked and served via llama.cpp over AMD jupyter instance ($0 while active) (check [fastfetch screenshot](.github/assets/fastfetch.png))
+- **Gemma 4 26B A4B IT** benchmarked and served via Fireworks infrastructure (required manual replica activation) [and almost exhausted the $50 hackathon budget](.github/assets/gemma4b_fireworks.png)
 - To verify the local server is running: (needs manual llama.cpp/vLLM deploy)
   ```bash
   curl http://localhost:8000/v1/chat/completions -d '{"model":"gemma-4-26b-a4b-it","messages":[{"role":"user","content":"Hello"}],"max_tokens":16}'
