@@ -1,5 +1,5 @@
 # ---- Build stage ----
-FROM python:3.10-slim AS builder
+FROM python:3.13-slim AS builder
 
 WORKDIR /app
 
@@ -10,16 +10,17 @@ ENV UV_LINK_MODE=copy
 RUN uv sync --frozen --no-dev && rm -rf /root/.cache/uv
 
 # ---- Runtime stage ----
-FROM python:3.10-slim
+FROM python:3.13-slim
 
 WORKDIR /app
+
+ENV PYTHONUNBUFFERED=1
 
 COPY --from=builder /app/.venv .venv/
 
 COPY src/ src/
 COPY config/ config/
 COPY entrypoint.sh /entrypoint.sh
-
 RUN chmod +x /entrypoint.sh
 
 ENV PATH="/app/.venv/bin:$PATH"
