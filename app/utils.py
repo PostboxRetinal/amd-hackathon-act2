@@ -21,10 +21,11 @@ def _on_refresh(fw_key: str) -> None:
         data = fetch_fireworks_models(fw_key)
         if data is not None:
             st.session_state.live_models = data
-            st.session_state.live_updated = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
             st.session_state.pop("live_error", None)
-        else:
-            st.session_state.live_error = "API call failed or returned empty"
+        # Also fetch deployment status
+        dep_status = fetch_deployment_status(fw_key)
+        st.session_state.deployment_status = dep_status
+        st.session_state.live_updated = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     except Exception:
         import traceback
 
@@ -52,9 +53,57 @@ def task_badge(task: TaskCategory) -> str:
     return f"{marker} {label}"
 
 
+MODEL_FULL_NAMES = {
+    "glm-5p2": "accounts/fireworks/models/glm-5p2",
+    "deepseek-v4-pro": "accounts/fireworks/models/deepseek-v4-pro",
+    "gemma-4-26b": "accounts/fireworks/models/gemma-4-26b-a4b-it",
+    "gemma-4-31b": "accounts/fireworks/models/gemma-4-31b-it",
+    "gemma-4-31b-it-nvfp4": "accounts/fireworks/models/gemma-4-31b-it-nvfp4",
+    "gemma-4-e4b": "accounts/fireworks/models/gemma-4-e4b",
+    "gemma-4-e4b-local": "accounts/fireworks/models/gemma-4-e4b",
+}
+
+
+def _get_model_full_name(model_name: str) -> str:
+    """Map a short model name to its full Fireworks API path."""
+    return MODEL_FULL_NAMES.get(model_name, model_name)
+
+
+MODEL_DISPLAY_NAMES = {
+    "glm-5p2": "GLM 5.2",
+    "deepseek-v4-pro": "DeepSeek V4 Pro",
+    "gemma-4-26b": "Gemma 4 26B A4B IT",
+    "gemma-4-31b": "Gemma 4 31B IT",
+    "gemma-4-31b-it-nvfp4": "Gemma 4 31B IT NVFP4",
+    "gemma-4-e4b": "Gemma 4 E4B",
+    "gemma-4-e4b-local": "Gemma 4 E4B",
+}
+
+
+def _get_display_name(model_name: str) -> str:
+    """Map a short model name to its human-readable display name."""
+    return MODEL_DISPLAY_NAMES.get(model_name, model_name)
+
+
+MODEL_URLS = {
+    "gemma-4-26b": "https://fireworks.ai/models/fireworks/gemma-4-26b-a4b-it",
+    "gemma-4-31b": "https://fireworks.ai/models/fireworks/gemma-4-31b-it",
+    "gemma-4-31b-it-nvfp4": "https://fireworks.ai/models/fireworks/gemma-4-31b-it-nvfp4",
+    "gemma-4-e4b": "https://fireworks.ai/models/fireworks/gemma-4-e4b",
+    "deepseek-v4-pro": "https://fireworks.ai/models/fireworks/deepseek-v4-pro",
+    "glm-5p2": "https://fireworks.ai/models/fireworks/glm-5p2",
+}
+
+
+def _get_model_url(model_name: str) -> str:
+    return MODEL_URLS.get(model_name, "#")
+
+
 def display_as_cli(result: dict, elapsed: float) -> None:
     """Render result summary as a polished output card."""
-    model = result.get("model", "?")
+    model_raw = result.get("model", "?")
+    model = _get_display_name(model_raw)
+    full_name = _get_model_full_name(model_raw)
     acc = float(result.get("accuracy_score", 0.0))
     tokens = result.get("tokens", 0)
     cost = float(result.get("cost", 0.0))
@@ -70,7 +119,8 @@ def display_as_cli(result: dict, elapsed: float) -> None:
     with st.container(border=True):
         head_l, head_r = st.columns([3, 1])
         head_l.markdown(
-            f"<span style='color:{status_color}'>●</span> **{model}**",
+            f"<span style='color:{status_color}'>●</span> **{model}**"
+            f"  \n`{full_name}`",
             unsafe_allow_html=True,
         )
         head_r.markdown(f"Task: {task_str}")
@@ -98,7 +148,7 @@ def display_metrics(result: dict, elapsed: float) -> None:
     """Show key metrics in columns below the CLI block."""
     col_a, col_b, col_c, col_d, col_e = st.columns(5)
     with col_a:
-        st.metric("Model", result["model"])
+        st.metric("Model", _get_display_name(result["model"]))
     with col_b:
         st.metric("Accuracy", f"{result['accuracy_score']:.2f}")
     with col_c:
@@ -123,7 +173,7 @@ def display_model_details(result: dict) -> None:
             model = get_model(result["model"])
             col1, col2 = st.columns(2)
             with col1:
-                st.markdown(f"**Name:** {model.name}")
+                st.markdown(f"**Name:** {_get_display_name(result['model'])}")
                 st.markdown(f"**Tier:** {model.tier.value}")
                 st.markdown(f"**Provider:** {model.provider}")
             with col2:
@@ -137,7 +187,7 @@ def display_model_details(result: dict) -> None:
 def display_status_bar(model: str, elapsed: float, tokens: int, cost: float) -> None:
     """Show a compact status bar after routing completes."""
     st.markdown(
-        f"**Done!** `{model}` | {elapsed:.1f}s | {tokens:,} tokens | ${cost:.6f}"
+        f"**Done!** `{_get_display_name(model)}` | {elapsed:.1f}s | {tokens:,} tokens | ${cost:.6f}"
     )
     st.divider()
 
@@ -153,8 +203,9 @@ def fetch_fireworks_models(api_key: str) -> dict | None:
     wayfinder_models = {
         "deepseek-v4-pro": "accounts/fireworks/models/deepseek-v4-pro",
         "glm-5p2": "accounts/fireworks/models/glm-5p2",
-        "gemma-4-26b": "accounts/postboxretinal/deployments/txbj700w",
+        "gemma-4-26b": "accounts/fireworks/models/gemma-4-26b-a4b-it",
         "gemma-4-31b": "accounts/fireworks/models/gemma-4-31b-it",
+        "gemma-4-31b-it-nvfp4": "accounts/fireworks/models/gemma-4-31b-it-nvfp4",
     }
 
     req = urllib.request.Request(
@@ -189,12 +240,90 @@ def fetch_fireworks_models(api_key: str) -> dict | None:
     return result
 
 
+def fetch_deployment_status(api_key: str) -> dict:
+    """Fetch deployment status from Fireworks control plane API.
+
+    Returns dict keyed by deployment model ID:
+    {"txbj700w": {"state": "READY", "replicas": 2, "model": "gemma-4-26b"}}
+    """
+    # Extract account ID from our deployment model ID
+    # e.g., "accounts/postboxretinal/deployments/txbj700w"
+    deployment_ref = "accounts/postboxretinal/deployments/txbj700w"
+    parts = deployment_ref.split("/")
+    account_id = parts[1]  # "postboxretinal"
+
+    req = urllib.request.Request(
+        f"https://api.fireworks.ai/v1/accounts/{account_id}/deployments",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+    except Exception:
+        return {}
+
+    result = {}
+    deployments = data if isinstance(data, list) else data.get("deployments", [])
+    for dep in deployments:
+        dep_id = dep.get("id", "")
+        state = dep.get("state", "UNKNOWN")
+        replica_stats = dep.get("replica_stats", {})
+        ready = replica_stats.get("ready", 0)
+        model_name = dep.get("base_model", "")
+        # Extract short ID from full path
+        short_id = dep_id.split("/")[-1] if "/" in dep_id else dep_id
+        result[short_id] = {
+            "state": state,
+            "replicas": ready,
+            "model": model_name,
+        }
+    return result
+
+
+# Category labels for models
+MODEL_CATEGORIES = {
+    "deepseek": "code/math",
+    "glm-5p2": "reasoning",
+    "gemma-4-31b": "general",
+    "gemma-4-26b": "dedicated",
+    "gemma-4-e4b": "local (ROCm)",
+}
+
+
+def _get_model_status(m, live_pricing, available_ids):
+    """Return (status_label, color, live_id) for a model."""
+    if "gemma" in m.name.lower():
+        status, status_color = "SETUP", "orange"
+    elif m.provider == "local":
+        status, status_color = "DOWN", "red"
+    elif live_pricing:
+        status = "UP" if m.model_id in available_ids else "SETUP"
+        status_color = "green" if status == "UP" else "orange"
+    else:
+        status = "UP" if "deployments" not in m.model_id else "SETUP"
+        status_color = "green" if status == "UP" else "orange"
+    return status, status_color, None
+
+
+def _get_category(name: str) -> str:
+    """Determine the category label for a model name."""
+    for key, label in MODEL_CATEGORIES.items():
+        if key in name.lower():
+            return label
+    return "general"
+
+
 def display_model_pool(router: Router, api_key: str | None = None) -> None:
     """Show model pool as compact status cards with colors."""
     if "live_models" not in st.session_state:
         st.session_state.live_models = {}
     if "live_updated" not in st.session_state:
         st.session_state.live_updated = None
+    if "deployment_status" not in st.session_state:
+        st.session_state.deployment_status = {}
 
     all_models = router._all()
     effective_key = api_key or os.environ.get("FIREWORKS_API_KEY")
@@ -202,50 +331,161 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
     live_pricing = live.get("pricing", {})
     available_ids = live.get("available_ids", set())
 
+    # Separate serverless from dedicated deployments
+    serverless_models = []
+    deployment_models = []
+
     for m in all_models:
-        # Determine status
-        if "gemma" in m.name.lower():
-            status = "SETUP"
-            status_color = "orange"
-        elif m.provider == "local":
-            status = "DOWN"
-            status_color = "red"
-        elif live_pricing:
-            status = "UP" if m.model_id in available_ids else "SETUP"
-            status_color = "green" if status == "UP" else "orange"
-        else:
-            status = "UP" if "deployments" not in m.model_id else "SETUP"
-            status_color = "green" if status == "UP" else "orange"
-
         if m.provider == "local":
-            tier_label = "local"
+            deployment_models.append(m)
+        elif "deployments" in m.model_id:
+            deployment_models.append(m)
+        elif "gemma-4-31b" in m.name.lower():
+            deployment_models.append(m)
         else:
-            tier_label = m.tier.value if hasattr(m.tier, "value") else str(m.tier)
+            serverless_models.append(m)
 
-        cost_str = f"${m.cost_per_1k_tokens:.4f}/1K"
-
-        # Build hover tooltip text
-        hover_parts = [f"Model: {m.name}"]
-        if live_pricing and m.name in live_pricing:
-            info = live_pricing[m.name]
-            live_id = info.get("id", "")
-            ctx = info.get("context_length", 0)
-            if live_id:
-                hover_parts.append(f"API ID: {live_id}")
-            if ctx:
-                hover_parts.append(f"Context: {ctx:,}")
-        hover_parts.append(f"Provider: {m.provider}")
-        hover_parts.append(f"Tier: {tier_label}")
-        hover_text = " | ".join(hover_parts)
-
-        st.markdown(
-            f"<span title='{hover_text}' style='cursor:help'>"
-            f"<span style='color:{status_color}'>●</span> "
-            f"**{m.name}**  \n"
-            f"<span style='color:gray;font-size:0.8em'>{status} | {tier_label} | {cost_str}</span>"
-            f"</span>",
-            unsafe_allow_html=True,
+    # Render serverless section
+    if serverless_models:
+        st.markdown("**Serverless**")
+        # LIVE badge if we have fresh pricing data
+        has_live = any(
+            live_pricing.get(m.name, {}).get("prompt_cost")
+            for m in serverless_models
         )
+        if has_live:
+            st.markdown(
+                "<span style='color:#00D4AA;font-size:0.7em;border:1px solid #00D4AA;"
+                "border-radius:4px;padding:0 6px;margin-left:4px'>LIVE</span>",
+                unsafe_allow_html=True,
+            )
+        for m in serverless_models:
+            status, status_color, _ = _get_model_status(m, live_pricing, available_ids)
+            tier_label = m.tier.value if hasattr(m.tier, "value") else str(m.tier)
+            category = _get_category(m.name)
+
+            # Prefer live pricing/context from API, fall back to static config
+            live_info = live_pricing.get(m.name, {})
+            live_prompt_cost = live_info.get("prompt_cost")
+            if live_prompt_cost and float(live_prompt_cost) > 0:
+                live_cost = float(live_prompt_cost) * 1000
+                cost_str = f"${live_cost:.4f}/1K"
+                cost_source = "live"
+            else:
+                cost_str = f"${m.cost_per_1k_tokens:.4f}/1K"
+                cost_source = "static"
+
+            live_ctx = live_info.get("context_length")
+            if live_ctx and int(live_ctx) > 0:
+                ctx = f"{int(live_ctx):,}"
+                ctx_source = "live"
+            else:
+                ctx = f"{m.context_limit:,}" if m.context_limit else "N/A"
+                ctx_source = "static"
+
+            hover_text = f"Model: {_get_display_name(m.name)} | Category: {category} | Provider: {m.provider} | Tier: {tier_label} | Pricing: {cost_source} | Context: {ctx_source} | Data: {cost_source}"
+
+            # Get full Fireworks path
+            full_path = _get_model_full_name(m.name)
+
+            # Color by model family
+            if "deepseek" in m.name.lower():
+                dot_color = "#7C3AED"       # purple
+            elif "glm" in m.name.lower():
+                dot_color = "#FFFFFF"       # white
+            elif "gemma-4-26b" in m.name.lower():
+                dot_color = "#4A90D9"       # medium blue
+            elif "nvfp4" in m.name.lower():
+                dot_color = "#00D4AA"       # teal/green for Nvidia
+            elif "gemma-4-31b" in m.name.lower():
+                dot_color = "#2E6CB5"       # dark blue
+            elif "gemma-4-e4b" in m.name.lower():
+                dot_color = "#6BB3E0"       # light blue
+            else:
+                dot_color = "#888888"       # gray fallback
+
+            # Build 3-line display
+            st.markdown(
+                f"<span title='{hover_text}' style='cursor:help'>"
+                f"<span style='color:{dot_color}'>●</span> "
+                f"**{_get_display_name(m.name)}** [\u2197]({_get_model_url(m.name)})  \n"
+                f"<span style='color:gray;font-size:0.75em'>{full_path}</span>  \n"
+                f"<span style='color:gray;font-size:0.8em'>{category} | {cost_str} | {ctx} ctx</span>"
+                f"</span>",
+                unsafe_allow_html=True,
+            )
+    # Render deployments section
+    if deployment_models:
+        st.markdown("**Deployments**")
+        st.markdown("[Create new deployment \u2192](https://app.fireworks.ai/dashboard/deployments/create)")
+        for m in deployment_models:
+            status, status_color, _ = _get_model_status(m, live_pricing, available_ids)
+            # Prefer live pricing/context from API, fall back to static config
+            live_info = live_pricing.get(m.name, {})
+            live_prompt_cost = live_info.get("prompt_cost")
+            if live_prompt_cost and float(live_prompt_cost) > 0:
+                live_cost = float(live_prompt_cost) * 1000
+                cost_str = f"${live_cost:.4f}/1K"
+                cost_source = "live"
+            else:
+                cost_str = f"${m.cost_per_1k_tokens:.4f}/1K"
+                cost_source = "static"
+
+            live_ctx = live_info.get("context_length")
+            if live_ctx and int(live_ctx) > 0:
+                ctx = f"{int(live_ctx):,}"
+                ctx_source = "live"
+            else:
+                ctx = f"{m.context_limit:,}" if m.context_limit else "N/A"
+                ctx_source = "static"
+
+            dep_status = st.session_state.get("deployment_status", {})
+            # Extract the deployment ID from the model's model_id
+            dep_id = m.model_id.split("/")[-1] if "/" in m.model_id else ""
+            live_dep = dep_status.get(dep_id, {})
+            dep_state = live_dep.get("state", "")
+            dep_replicas = live_dep.get("replicas", 0)
+
+            hover_parts = [f"Model: {_get_display_name(m.name)}", f"Provider: {m.provider}"]
+            if dep_state:
+                hover_parts.append(f"Status: {dep_state}")
+                hover_parts.append(f"Replicas: {dep_replicas}")
+            hover_parts.append(f"Pricing: {cost_source}")
+            hover_parts.append(f"Context: {ctx_source}")
+            hover_parts.append(f"Data: {cost_source}")
+            hover_text = " | ".join(hover_parts)
+
+            # Get full Fireworks path
+            full_path = _get_model_full_name(m.name)
+
+            # Color by model family
+            if "deepseek" in m.name.lower():
+                dot_color = "#7C3AED"       # purple
+            elif "glm" in m.name.lower():
+                dot_color = "#FFFFFF"       # white
+            elif "gemma-4-26b" in m.name.lower():
+                dot_color = "#4A90D9"       # medium blue
+            elif "nvfp4" in m.name.lower():
+                dot_color = "#00D4AA"       # teal/green for Nvidia
+            elif "gemma-4-31b" in m.name.lower():
+                dot_color = "#2E6CB5"       # dark blue
+            elif "gemma-4-e4b" in m.name.lower():
+                dot_color = "#6BB3E0"       # light blue
+            else:
+                dot_color = "#888888"       # gray fallback
+
+            category = "dedicated"
+
+            # Build 3-line display
+            st.markdown(
+                f"<span title='{hover_text}' style='cursor:help'>"
+                f"<span style='color:{dot_color}'>●</span> "
+                f"**{_get_display_name(m.name)}** [\u2197]({_get_model_url(m.name)})  \n"
+                f"<span style='color:gray;font-size:0.75em'>{full_path}</span>  \n"
+                f"<span style='color:gray;font-size:0.8em'>{cost_str} | {ctx} ctx</span>"
+                f"</span>",
+                unsafe_allow_html=True,
+            )
 
     # Refresh button
     if effective_key:
@@ -284,6 +524,8 @@ def add_to_history(prompt: str, result: dict, elapsed: float) -> None:
             "cost": result.get("cost", 0.0),
             "elapsed": round(elapsed, 2),
             "accuracy": result.get("accuracy_score", 0.0),
+            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "task_category": result.get("task_category"),
         }
     )
     if len(st.session_state.history) > HISTORY_MAX:

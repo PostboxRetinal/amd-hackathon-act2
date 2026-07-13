@@ -26,6 +26,14 @@ models:
     accuracy_score: 0.95
     context_limit: 260000
 
+  - name: gemma-4-31b-it-nvfp4
+    tier: standard
+    provider: fireworks
+    model_id: accounts/fireworks/models/gemma-4-31b-it-nvfp4
+    cost_per_1k_tokens: 0.0020
+    accuracy_score: 0.94
+    context_limit: 260000
+
   - name: deepseek-v4-pro
     tier: standard
     provider: fireworks

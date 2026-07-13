@@ -306,3 +306,54 @@
 **Status:** Complete
 **Action:** Updated SEMVER from 0.4.0 to 0.5.0
 **Verification:** `streamlit run` footer shows `Wayfinder v0.5.0`
+
+### T-058: Sidebar: model grouping
+**Status:** Complete
+**Action:** Models split into Serverless and Deployments sections with category labels
+**Verification:** Sidebar shows Serverless and Deployments sections with category labels
+
+### T-059: Live deployment status
+**Status:** Complete
+**Action:** fetch_deployment_status() API, live state/replicas in tooltips
+**Verification:** Deployment status reflects live state/replicas in tooltips
+
+### T-060: Dynamic history auto-refresh
+**Status:** Complete
+**Action:** Added auto-refresh when new history entries appear via st.rerun() count tracking
+**Verification:** History updates instantly when new entries are added
+
+### T-061: Interactive clickable history
+**Status:** Complete
+**Action:** History entries are now clickable buttons that restore the full routing result into the main display
+**Verification:** Clicking a history entry loads model, response, accuracy, and task badge
+
+### T-062: Model-based history coloring
+**Status:** Complete
+**Action:** History entries colored by model: cyan for DeepSeek, blue for GLM, amber for Gemma
+**Verification:** Each history entry shows a colored dot matching its model
+
+### T-063: Full Fireworks API path display
+**Status:** Complete
+**Action:** Model cards now show the full Fireworks API path (e.g. accounts/fireworks/models/glm-5p2) under the model name
+**Verification:** Each model card shows its Fireworks path in gray monospace
+
+### T-064: Human-readable model display names
+**Status:** Complete
+**Action:** Added MODEL_DISPLAY_NAMES mapping with readable names (Gemma 4 31B IT, DeepSeek V4 Pro, GLM 5.2, etc.)
+**Verification:** All model references display human-readable names instead of raw API names
+
+### T-065: Live pricing and context from API
+**Status:** Complete
+**Action:** Refresh button now fetches live pricing and context length from Fireworks API, falls back to static config when unavailable. Data source shown in hover tooltip.
+**Verification:** After clicking Refresh, model prices and context reflect API values; tooltip shows "Data: live" or "Data: static"
+
+### T-066: Model pool UI polish
+**Status:** Complete
+**Action:** Added colored dot per model (distinct blues per Gemma, purple for DeepSeek, white for GLM, teal for NVFP4), model card links to Fireworks, LIVE badge for serverless, deployment creation link, removed redundant labels
+**Files:** app/utils.py
+**Verification:** Sidebar shows polished model cards with colors, links, LIVE badge when data is fresh
+
+### T-067: OpenSpec update
+**Status:** Complete
+**Action:** Added T-060 through T-067 documenting all recent changes
+**Verification:** OpenSpec validates successfully

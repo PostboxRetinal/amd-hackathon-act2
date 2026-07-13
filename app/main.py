@@ -43,6 +43,7 @@ from app.utils import (  # noqa: E402
     display_model_details,
     display_model_pool,
     display_response,
+    _get_display_name,
 )
 from src.router import Router  # noqa: E402
 from src.tasks import TaskCategory  # noqa: E402
@@ -107,13 +108,51 @@ with st.sidebar:
 
     # History panel
     st.markdown("**History**")
-    for i, entry in enumerate(reversed(st.session_state.history)):
-        idx = len(st.session_state.history) - i
-        prompt_preview = entry['prompt'][:50] + "..." if len(entry['prompt']) > 50 else entry['prompt']
-        st.markdown(
-            f"`#{idx}` {prompt_preview} — **{entry['model']}** `{entry['elapsed']}s`"
-        )
-    if not st.session_state.history:
+    if st.session_state.history:
+        # Model color mapping for history dots
+        MODEL_COLORS = {
+            "deepseek": "#00D4AA",
+            "glm": "#3D9DF3",
+            "gemma": "#FFBF00",
+        }
+
+        def _model_color(model: str) -> str:
+            for key, color in MODEL_COLORS.items():
+                if key in model.lower():
+                    return color
+            return "#888"
+
+        for i, entry in enumerate(reversed(st.session_state.history)):
+            idx = len(st.session_state.history) - i
+            prompt_preview = entry['prompt'][:40] + "..." if len(entry['prompt']) > 40 else entry['prompt']
+            ts = entry.get("timestamp", "")
+            time_only = ts.split(" ")[1][:5] if ts and " " in ts else ""
+            model = entry.get("model", "?")
+            model_display = _get_display_name(model)
+            dot_color = _model_color(model)
+
+            # Colored dot for visual model distinction
+            st.markdown(
+                f"<span style='color:{dot_color}'>●</span> "
+                f"#{idx} {prompt_preview} — **{model_display}** `{time_only}`",
+                unsafe_allow_html=True,
+            )
+
+            if st.button(f"Load #{idx}", key=f"hist_{idx}", use_container_width=True):
+                # Restore this history entry into the main display
+                st.session_state.last_result = {
+                    "model": model,
+                    "tokens": entry["tokens"],
+                    "cost": entry["cost"],
+                    "accuracy_score": entry["accuracy"],
+                    "fallback_used": False,
+                    "response": entry.get("full_response", "[restored from history]"),
+                    "task_category": entry.get("task_category"),
+                }
+                st.session_state.last_prompt = entry["prompt"]
+                st.session_state.last_elapsed = entry["elapsed"]
+                st.rerun()
+    else:
         st.caption("No history yet.")
 
 # ---------------------------------------------------------------------------#
@@ -203,10 +242,11 @@ if submit_triggered:
     st.session_state.last_prompt = prompt
     st.session_state.last_elapsed = elapsed
     st.session_state.last_task = task
-    add_to_history(prompt, result, elapsed)
+    # Store full response for history restore
+    add_to_history(prompt, {**result, "full_response": result.get("response", "")}, elapsed)
 
     if result is not None:
-        st.toast(f"Routed to {result['model']}")
+        st.toast(f"Routed to {_get_display_name(result['model'])}")
 
 elif submitted and not prompt:
     st.warning("Enter a prompt first.")
@@ -242,3 +282,12 @@ st.divider()
 st.caption(
     f"Wayfinder v{VERSION} -- AMD Hackathon ACT II Track 1 -- Hybrid Token-Efficient Routing Agent"
 )
+
+# Auto-refresh history when new entries appear
+if "history" in st.session_state:
+    current_count = len(st.session_state.history)
+    if "history_count" not in st.session_state:
+        st.session_state.history_count = current_count
+    elif st.session_state.history_count != current_count:
+        st.session_state.history_count = current_count
+        st.rerun()
