@@ -65,15 +65,15 @@ class Router:
     # balancing cost and capability.  The values must match the "name" field
     # in config/models.yaml.
     _TASK_MODEL_MAP: dict[TaskCategory, str] = {
-        TaskCategory.MATH: "gemma-4-e4b-local",  # 0 FW tokens
-        TaskCategory.FACTOID: "gemma-4-e4b-local",  # 0 FW tokens
-        TaskCategory.CLASSIFICATION: "gemma-4-e4b-local",  # 0 FW tokens
-        TaskCategory.EXTRACTION: "gemma-4-e4b-local",  # 0 FW tokens
-        TaskCategory.SUMMARIZATION: "gemma-4-e4b-local",  # 0 FW tokens
-        TaskCategory.UNKNOWN: "gemma-4-e4b-local",  # 0 FW tokens
-        TaskCategory.CREATIVE: "gemma-4-26b",  # dedicated deploy
-        TaskCategory.CODE: "deepseek-v4-pro",  # strong coder
-        TaskCategory.REASONING: "glm-5p2",  # strongest reasoning
+        TaskCategory.MATH: "gemma-4-e4b-local",
+        TaskCategory.FACTOID: "gemma-4-e4b-local",
+        TaskCategory.CLASSIFICATION: "gemma-4-e4b-local",
+        TaskCategory.EXTRACTION: "gemma-4-e4b-local",
+        TaskCategory.SUMMARIZATION: "gemma-4-e4b-local",
+        TaskCategory.UNKNOWN: "gemma-4-e4b-local",
+        TaskCategory.CREATIVE: "gemma-4-e4b-local",
+        TaskCategory.CODE: "deepseek-v4-pro",
+        TaskCategory.REASONING: "glm-5p2",
     }
 
     def select_model(self, task: TaskCategory) -> Model:
@@ -82,16 +82,27 @@ class Router:
 
         Strategy:
           - Use a task-to-model strength map (cost-aware: cheapest suitable model first).
-          - If the recommended model is a local vLLM model that is unavailable,
-            fall back to the next suitable model by tier.
+          - If the recommended model is unavailable, cascade through fallback chain
+            by cost: self-hosted > deployments > serverless.
         """
         model_name = self._TASK_MODEL_MAP.get(task, "gemma-4-26b")
         model = self._get_model_by_name(model_name)
 
-        # If the recommended model is a local vLLM instance that is not running,
-        # fall back to the cheapest available Fireworks model.
+        # If the recommended model is local and not running, cascade through
+        # fallback chain (deployments -> serverless) instead of jumping
+        # directly to the cheapest Fireworks model.
         if self._is_local_model(model) and not self._is_local_available():
+            chain = self._fallback_chain(model)
+            # Return the first available model in the cascade
+            for m in chain:
+                if self._is_local_model(m) and not self._is_local_available():
+                    continue
+                return m
+            # If nothing found, fall back to cheapest Fireworks
             model = self._cheapest_available_fireworks_model()
+        elif self._is_local_model(model) and self._is_local_available():
+            # Local is available, use it
+            pass
 
         return model
 
@@ -214,8 +225,9 @@ class Router:
 
         # Build curl command based on provider.
         if model.provider.lower() == "local":
-            # Local model: model.model_id is the full URL; omit auth header.
+            # Local model: model.model_id is the full URL; use local_model_name in payload.
             url = model.model_id
+            payload["model"] = model.local_model_name or model.name
             headers = ["-H", "Content-Type: application/json"]
         else:
             # Fireworks model: use Fireworks endpoint with auth header.

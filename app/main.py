@@ -37,7 +37,6 @@ st.set_page_config(
 # ---------------------------------------------------------------------------#
 
 from app.utils import (  # noqa: E402
-    _get_display_name,
     add_to_history,
     display_as_cli,
     display_model_details,
@@ -45,6 +44,7 @@ from app.utils import (  # noqa: E402
     display_response,
     validate_api_key,
 )
+from src.models import get_model  # noqa: E402
 from src.router import Router  # noqa: E402
 from src.tasks import TaskCategory  # noqa: E402
 
@@ -104,7 +104,7 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    api_key_locked = key_valid
+    api_key_locked = key_valid == True
     api_key = st.text_input(
         "FIREWORKS_API_KEY",
         type="password",
@@ -163,7 +163,11 @@ with st.sidebar:
             ts = entry.get("timestamp", "")
             time_only = ts.split(" ")[1][:5] if ts and " " in ts else ""
             model = entry.get("model", "?")
-            model_display = _get_display_name(model)
+            try:
+                mm = get_model(model)
+                model_display = mm.display_name
+            except ValueError:
+                model_display = model
             dot_color = _model_color(model)
 
             # Colored dot for visual model distinction
@@ -283,7 +287,12 @@ if submit_triggered:
     add_to_history(prompt, {**result, "full_response": result.get("response", "")}, elapsed)
 
     if result is not None:
-        st.toast(f"Routed to {_get_display_name(result['model'])}")
+        try:
+            mm = get_model(result["model"])
+            model_disp = mm.display_name
+        except ValueError:
+            model_disp = result["model"]
+        st.toast(f"Routed to {model_disp}")
 
 elif submitted and not prompt:
     st.warning("Enter a prompt first.")

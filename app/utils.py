@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 import streamlit as st
 
-from src.models import get_model
+from src.models import get_model, load_models
 from src.router import Router
 from src.tasks import TaskCategory
 
@@ -52,54 +52,16 @@ def task_badge(task: TaskCategory) -> str:
     return f"{marker} {label}"
 
 
-MODEL_FULL_NAMES = {
-    "glm-5p2": "accounts/fireworks/models/glm-5p2",
-    "deepseek-v4-pro": "accounts/fireworks/models/deepseek-v4-pro",
-    "gemma-4-26b": "accounts/fireworks/models/gemma-4-26b-a4b-it",
-    "gemma-4-31b": "accounts/fireworks/models/gemma-4-31b-it",
-    "gemma-4-e4b": "accounts/fireworks/models/gemma-4-26b-a4b-it",
-    "gemma-4-e4b-local": "accounts/fireworks/models/gemma-4-26b-a4b-it",
-}
-
-
-def _get_model_full_name(model_name: str) -> str:
-    """Map a short model name to its full Fireworks API path."""
-    return MODEL_FULL_NAMES.get(model_name, model_name)
-
-
-MODEL_DISPLAY_NAMES = {
-    "glm-5p2": "GLM 5.2",
-    "deepseek-v4-pro": "DeepSeek V4 Pro",
-    "gemma-4-26b": "Gemma 4 26B A4B IT",
-    "gemma-4-31b": "Gemma 4 31B IT",
-    "gemma-4-e4b": "Gemma 4 26B A4B IT",
-    "gemma-4-e4b-local": "Gemma 4 26B A4B IT",
-}
-
-
-def _get_display_name(model_name: str) -> str:
-    """Map a short model name to its human-readable display name."""
-    return MODEL_DISPLAY_NAMES.get(model_name, model_name)
-
-
-MODEL_URLS = {
-    "gemma-4-26b": "https://fireworks.ai/models/fireworks/gemma-4-26b-a4b-it",
-    "gemma-4-31b": "https://fireworks.ai/models/fireworks/gemma-4-31b-it",
-    "gemma-4-e4b": "https://fireworks.ai/models/fireworks/gemma-4-26b-a4b-it",
-    "deepseek-v4-pro": "https://fireworks.ai/models/fireworks/deepseek-v4-pro",
-    "glm-5p2": "https://fireworks.ai/models/fireworks/glm-5p2",
-}
-
-
-def _get_model_url(model_name: str) -> str:
-    return MODEL_URLS.get(model_name, "#")
-
-
 def display_as_cli(result: dict, elapsed: float) -> None:
     """Render result summary as a polished output card."""
     model_raw = result.get("model", "?")
-    model = _get_display_name(model_raw)
-    full_name = _get_model_full_name(model_raw)
+    try:
+        m = get_model(model_raw)
+        model = m.display_name
+        full_name = m.model_id
+    except ValueError:
+        model = model_raw
+        full_name = model_raw
     acc = float(result.get("accuracy_score", 0.0))
     tokens = result.get("tokens", 0)
     cost = float(result.get("cost", 0.0))
@@ -141,7 +103,11 @@ def display_metrics(result: dict, elapsed: float) -> None:
     """Show key metrics in columns below the CLI block."""
     col_a, col_b, col_c, col_d, col_e = st.columns(5)
     with col_a:
-        st.metric("Model", _get_display_name(result["model"]))
+        try:
+            mm = get_model(result["model"])
+            st.metric("Model", mm.display_name)
+        except ValueError:
+            st.metric("Model", result["model"])
     with col_b:
         st.metric("Accuracy", f"{result['accuracy_score']:.2f}")
     with col_c:
@@ -164,24 +130,30 @@ def display_model_details(result: dict) -> None:
     with st.expander("Model Details"):
         try:
             model = get_model(result["model"])
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown(f"**Name:** {_get_display_name(result['model'])}")
-                st.markdown(f"**Tier:** {model.tier.value}")
-                st.markdown(f"**Provider:** {model.provider}")
-            with col2:
-                st.markdown(f"**Cost / 1K tokens:** ${model.cost_per_1k_tokens}")
-                st.markdown(f"**Accuracy score:** {model.accuracy_score}")
-                st.markdown(f"**Context limit:** {model.context_limit:,}")
         except ValueError:
             st.markdown(f"Model `{result['model']}` not found in catalog.")
+            return
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"**Name:** {model.display_name}")
+            st.markdown(f"**Tier:** {model.tier.value}")
+            st.markdown(f"**Provider:** {model.provider}")
+        with col2:
+            st.markdown(f"**Cost / 1K tokens:** ${model.cost_per_1k_tokens}")
+            st.markdown(f"**Accuracy score:** {model.accuracy_score}")
+            st.markdown(f"**Context limit:** {model.context_limit:,}")
 
 
 def display_status_bar(model: str, elapsed: float, tokens: int, cost: float) -> None:
     """Show a compact status bar after routing completes."""
-    st.markdown(
-        f"**Done!** `{_get_display_name(model)}` | {elapsed:.1f}s | {tokens:,} tokens | ${cost:.6f}"
-    )
+    model_disp = ""
+    try:
+        mm = get_model(model)
+        model_disp = mm.display_name
+    except ValueError:
+        model_disp = model
+    st.markdown(f"**Done!** `{model_disp}` | {elapsed:.1f}s | {tokens:,} tokens | ${cost:.6f}")
     st.divider()
 
 
@@ -208,12 +180,7 @@ def fetch_fireworks_models(api_key: str) -> dict | None:
     filtered to only the models we use in routing.
     """
 
-    wayfinder_models = {
-        "deepseek-v4-pro": "accounts/fireworks/models/deepseek-v4-pro",
-        "glm-5p2": "accounts/fireworks/models/glm-5p2",
-        "gemma-4-26b": "accounts/fireworks/models/gemma-4-26b-a4b-it",
-        "gemma-4-31b": "accounts/fireworks/models/gemma-4-31b-it",
-    }
+    wayfinder_models = {m.name: m.model_id for m in load_models()}
 
     req = urllib.request.Request(
         "https://api.fireworks.ai/inference/v1/models",
@@ -290,16 +257,6 @@ def fetch_deployment_status(api_key: str) -> dict:
     return result
 
 
-# Category labels for models
-MODEL_CATEGORIES = {
-    "deepseek": "code/math",
-    "glm-5p2": "reasoning",
-    "gemma-4-31b": "general",
-    "gemma-4-26b": "dedicated",
-    "gemma-4-e4b": "dedicated (Fireworks)",
-}
-
-
 def _get_model_status(m, live_pricing, available_ids):
     """Return (status_label, color, live_id) for a model."""
     if "gemma" in m.name.lower():
@@ -313,14 +270,6 @@ def _get_model_status(m, live_pricing, available_ids):
         status = "UP" if "deployments" not in m.model_id else "SETUP"
         status_color = "green" if status == "UP" else "orange"
     return status, status_color, None
-
-
-def _get_category(name: str) -> str:
-    """Determine the category label for a model name."""
-    for key, label in MODEL_CATEGORIES.items():
-        if key in name.lower():
-            return label
-    return "general"
 
 
 def display_model_pool(router: Router, api_key: str | None = None) -> None:
@@ -347,6 +296,8 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
             deployment_models.append(m)
         elif "deployments" in m.model_id:
             deployment_models.append(m)
+        elif "gemma-4-31b" in m.name.lower():
+            deployment_models.append(m)
         else:
             serverless_models.append(m)
 
@@ -363,7 +314,7 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
         st.markdown(f"**Serverless**{live_badge}", unsafe_allow_html=True)
         for m in serverless_models:
             status, status_color, _ = _get_model_status(m, live_pricing, available_ids)
-            category = _get_category(m.name)
+            category = m.category
 
             # Prefer live pricing/context from API, fall back to static config
             live_info = live_pricing.get(m.name, {})
@@ -380,17 +331,19 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
             else:
                 ctx = f"{m.context_limit:,}" if m.context_limit else "N/A"
 
-            hover_parts = [f"Model: {_get_display_name(m.name)}", f"Category: {category}"]
+            hover_parts = [f"Model: {m.display_name}", f"Category: {category}"]
             hover_text = " | ".join(hover_parts)
 
             # Get full Fireworks path
-            full_path = _get_model_full_name(m.name)
+            full_path = m.model_id
 
             # Color by model family
             if "deepseek" in m.name.lower():
                 dot_color = "#7C3AED"  # purple
             elif "glm" in m.name.lower():
                 dot_color = "#FFFFFF"  # white
+            elif "nvfp4" in m.name.lower():
+                dot_color = "#00D4AA"  # teal for Nvidia
             elif "gemma-4-26b" in m.name.lower():
                 dot_color = "#4A90D9"  # medium blue
             elif "gemma-4-31b" in m.name.lower():
@@ -404,7 +357,7 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
             st.markdown(
                 f"<span title='{hover_text}' style='cursor:help'>"
                 f"<span style='color:{dot_color}'>●</span> "
-                f"**{_get_display_name(m.name)}** [\u2197]({_get_model_url(m.name)})  \n"
+                f"**{m.display_name}** [\u2197]({m.model_url})  \n"
                 f"<span style='color:gray;font-size:0.75em'>{full_path}</span>  \n"
                 f"<span style='color:gray;font-size:0.8em'>{category} | {cost_str} | {ctx} ctx</span>"
                 f"</span>",
@@ -433,17 +386,19 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
             else:
                 ctx = f"{m.context_limit:,}" if m.context_limit else "N/A"
 
-            hover_parts = [f"Model: {_get_display_name(m.name)}", "Category: dedicated"]
+            hover_parts = [f"Model: {m.display_name}", "Category: dedicated"]
             hover_text = " | ".join(hover_parts)
 
             # Get full Fireworks path
-            full_path = _get_model_full_name(m.name)
+            full_path = m.model_id
 
             # Color by model family
             if "deepseek" in m.name.lower():
                 dot_color = "#7C3AED"  # purple
             elif "glm" in m.name.lower():
                 dot_color = "#FFFFFF"  # white
+            elif "nvfp4" in m.name.lower():
+                dot_color = "#00D4AA"  # teal for Nvidia
             elif "gemma-4-26b" in m.name.lower():
                 dot_color = "#4A90D9"  # medium blue
             elif "gemma-4-31b" in m.name.lower():
@@ -459,7 +414,7 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
             st.markdown(
                 f"<span title='{hover_text}' style='cursor:help'>"
                 f"<span style='color:{dot_color}'>●</span> "
-                f"**{_get_display_name(m.name)}** [\u2197]({_get_model_url(m.name)})  \n"
+                f"**{m.display_name}** [\u2197]({m.model_url})  \n"
                 f"<span style='color:gray;font-size:0.75em'>{full_path}</span>  \n"
                 f"<span style='color:gray;font-size:0.8em'>{cost_str} | {ctx} ctx</span>"
                 f"</span>",
