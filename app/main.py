@@ -37,14 +37,13 @@ st.set_page_config(
 # ---------------------------------------------------------------------------#
 
 from app.utils import (  # noqa: E402
+    _get_display_name,
     add_to_history,
     display_as_cli,
-    display_metrics,
     display_model_details,
     display_model_pool,
     display_response,
     validate_api_key,
-    _get_display_name,
 )
 from src.router import Router  # noqa: E402
 from src.tasks import TaskCategory  # noqa: E402
@@ -93,9 +92,9 @@ with st.sidebar:
 
     # API Key with colored border based on validation state
     key_valid = st.session_state.get("api_key_validated")
-    if key_valid == True:
+    if key_valid:
         border_color = "green"
-    elif key_valid == False:
+    elif not key_valid:
         border_color = "red"
     else:
         border_color = "#333"
@@ -105,7 +104,7 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    api_key_locked = key_valid == True
+    api_key_locked = key_valid
     api_key = st.text_input(
         "FIREWORKS_API_KEY",
         type="password",
@@ -123,12 +122,12 @@ with st.sidebar:
             st.session_state.api_key_validated = is_valid
 
     is_valid = st.session_state.get("api_key_validated")
-    if is_valid == True:
+    if is_valid:
         st.success("API key valid")
         if st.button("Change key", key="change_key"):
             st.session_state.api_key_validated = None
             st.rerun()
-    elif is_valid == False:
+    elif not is_valid:
         st.error("API key invalid - check your key")
 
     st.divider()
@@ -158,7 +157,9 @@ with st.sidebar:
 
         for i, entry in enumerate(reversed(st.session_state.history)):
             idx = len(st.session_state.history) - i
-            prompt_preview = entry['prompt'][:40] + "..." if len(entry['prompt']) > 40 else entry['prompt']
+            prompt_preview = (
+                entry["prompt"][:40] + "..." if len(entry["prompt"]) > 40 else entry["prompt"]
+            )
             ts = entry.get("timestamp", "")
             time_only = ts.split(" ")[1][:5] if ts and " " in ts else ""
             model = entry.get("model", "?")
@@ -194,7 +195,9 @@ with st.sidebar:
 # ---------------------------------------------------------------------------#
 
 st.title("Wayfinder")
-st.markdown("**Hybrid Token-Efficient Routing Agent** | Task-aware model selection across Gemma 4, DeepSeek V4 Pro, and GLM 5.2. NO-AIslop, straight to the point.")
+st.markdown(
+    "**Hybrid Token-Efficient Routing Agent** | Task-aware model selection across Gemma 4, DeepSeek V4 Pro, and GLM 5.2. NO-AIslop, straight to the point."
+)
 
 # Apply dynamic theme
 st.markdown(
