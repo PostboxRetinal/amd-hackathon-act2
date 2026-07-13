@@ -28,5 +28,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8501
 
-# Auto-detect: args → CLI, no args → Web UI
 ENTRYPOINT ["/entrypoint.sh"]
