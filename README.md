@@ -190,10 +190,10 @@ Runs the full evaluation suite across all categories and models, producing a JSO
 ### Tests
 
 ```bash
-uv run python3 -m pytest tests/ -v
+uv run qa
 ```
 
-45 tests covering task classification, model catalog, evaluator, and router logic with 77% code coverage.
+73 tests covering task classification, model catalog, evaluator, and router logic with 87.54% code coverage.
 
 ### Benchmark Results
 
@@ -240,7 +240,7 @@ bash scripts/qa.sh
 The QA pipeline checks:
 1. `ruff check` — Lint errors, unused imports, naming conventions
 2. `ruff format --check` — Code formatting consistency
-3. `pytest --cov=src` — 45 tests, 77% coverage (threshold: 75%)
+3. `pytest --cov=src` — 73 tests, 87.54% coverage (threshold: 75%)
 
 If any check fails, the commit is blocked. To bypass (not recommended):
 ```bash

@@ -402,3 +402,8 @@
 **Status:** Complete
 **Action:** ruff check PASS, ruff format PASS (18 files), pytest 73/73 PASS, coverage 88% (threshold 75%). All gates green.
 **Files:** tests/
+
+### T-077: Refresh UI polish + localhost URL fix
+**Status:** Complete
+**Action:** Removed verbose flash message box after Refresh. Made UTC timestamp more prominent (yellow `#ffc107` span). Stripped `http://` from local model path to prevent auto-linkified blue URL in sidebar.
+**Files:** app/utils.py
