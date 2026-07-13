@@ -98,7 +98,7 @@ flowchart TD
 | Model | Provider | Instance | Cost/1K |
 |-------|----------|------|---------|
 | Gemma 4 E4B (7.5B, Q4_K_M) (huggingface) | llama.cpp (AMD jupyter notebook)  | locally tested | $0.00 |
-| Gemma 4 26B A4B | Fireworks (deploy) | deployed on demand | $0.00 ($28/h) exhausted almost the given $50|
+| Gemma 4 26B A4B | Fireworks (deploy) | deployed on demand | $0.00 ($28/h) almost exhausted the given $50|
 | Gemma 4 31B | Fireworks (serverless) | needs deployment | $0.0010 |
 | DeepSeek V4 Pro | Fireworks (serverless) | serverless | $0.0015 |
 | GLM 5.2 | Fireworks (serverless) | serverless | $0.0014 |
@@ -190,10 +190,10 @@ Runs the full evaluation suite across all categories and models, producing a JSO
 ### Tests
 
 ```bash
-uv run python3 -m pytest tests/ -v
+uv run qa
 ```
 
-45 tests covering task classification, model catalog, evaluator, and router logic with 77% code coverage.
+73 tests covering task classification, model catalog, evaluator, and router logic with 87.54% code coverage.
 
 ### Benchmark Results
 
@@ -240,7 +240,7 @@ bash scripts/qa.sh
 The QA pipeline checks:
 1. `ruff check` — Lint errors, unused imports, naming conventions
 2. `ruff format --check` — Code formatting consistency
-3. `pytest --cov=src` — 45 tests, 77% coverage (threshold: 75%)
+3. `pytest --cov=src` — 73 tests, 87.54% coverage (threshold: 75%)
 
 If any check fails, the commit is blocked. To bypass (not recommended):
 ```bash
@@ -328,5 +328,5 @@ uv run pytest tests/ -v --cov=src | tail -3
 
 ## Submission
 
-- **Status:** Submitted (deadline was Sunday, July 12, 2026 — 3:00 PM PT)
+- **Status:** Submitted (deadline was Sunday, July 13, 2026 — 8:30 AM EDT)
 - **Track:** Track 1 — Token-Efficient Routing
