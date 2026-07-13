@@ -3,6 +3,8 @@ import os
 import sys
 from importlib.metadata import version as _pkg_version
 
+import tomllib
+
 from src.router import Router
 
 # Check --version before API key check
@@ -10,7 +12,12 @@ if "--version" in sys.argv:
     try:
         ver = _pkg_version("wayfinder")
     except Exception:
-        ver = "0.5.0"
+        try:
+            _pp = os.path.join(os.path.dirname(__file__), "..", "pyproject.toml")
+            with open(_pp, "rb") as _f:
+                ver = tomllib.load(_f)["project"]["version"]
+        except Exception:
+            ver = "0.5.0"
     print(f"wayfinder {ver}")
     sys.exit(0)
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import urllib.request
 from datetime import datetime, timezone
 
@@ -16,11 +17,43 @@ from src.tasks import TaskCategory
 
 def _on_refresh(fw_key: str) -> None:
     """Refresh callback: fetch live model data from Fireworks API."""
+    # Clear previous flash message
+    st.session_state._refresh_msg = ""
     try:
+        old_data = st.session_state.get("live_models", {})
         data = fetch_fireworks_models(fw_key)
         if data is not None:
             st.session_state.live_models = data
+
+            # Track what changed
+            changes = []
+            old_pricing = old_data.get("pricing", {})
+            new_pricing = data.get("pricing", {})
+            all_keys = set(list(old_pricing.keys()) + list(new_pricing.keys()))
+            for k in sorted(all_keys):
+                old_val = old_pricing.get(k, {})
+                new_val = new_pricing.get(k, {})
+                old_cost = old_val.get("prompt_cost", 0)
+                new_cost = new_val.get("prompt_cost", 0)
+                old_ctx = old_val.get("context_length", 0)
+                new_ctx = new_val.get("context_length", 0)
+                parts = []
+                if old_cost != new_cost:
+                    parts.append("pricing")
+                if old_ctx != new_ctx:
+                    parts.append("context")
+                if parts:
+                    changes.append(f"{k}: {', '.join(parts)}")
+
+            if changes:
+                st.session_state._refresh_msg = "Updated: " + "; ".join(changes)
+            else:
+                st.session_state._refresh_msg = "No changes detected"
+            st.session_state._refresh_time = time.time()
+
             st.session_state.pop("live_error", None)
+            pricing_count = len(data.get("pricing", {}))
+            st.toast(f"Refreshed {pricing_count} models")
         # Also fetch deployment status
         dep_status = fetch_deployment_status(fw_key)
         st.session_state.deployment_status = dep_status
@@ -358,7 +391,7 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
                 st.markdown(
                     f"<span title='{hover_text}' style='cursor:help'>"
                     f"<span style='color:{dot_color}'>●</span> "
-                    f"**{m.display_name}** [\u2197]({m.model_url})  \n"
+                    f"**{m.display_name}**  \n"
                     f"<span style='color:gray;font-size:0.75em'>{full_path}</span>  \n"
                     f"<span style='color:gray;font-size:0.8em'>{category} | {cost_str} | {ctx} ctx</span>"
                     f"</span>",
@@ -367,8 +400,14 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
     # Render deployments section
     if deployment_models:
         with st.container(border=True):
-            st.markdown("[**Gemma On-demand deployments**](https://app.fireworks.ai/dashboard/deployments/create)")
-
+            st.markdown("**On-demand deployments**")
+            st.markdown(
+                "<a href='https://app.fireworks.ai/dashboard/deployments/create' "
+                "style='display:inline-block;border:1px solid #555;border-radius:6px;"
+                "padding:4px 12px;color:#ccc;font-size:0.8em;text-decoration:none;"
+                "margin-bottom:6px'>+ Create deployment</a>",
+                unsafe_allow_html=True,
+            )
             for m in deployment_models:
                 status, status_color, _ = _get_model_status(m, live_pricing, available_ids)
                 # Prefer live pricing/context from API, fall back to static config
@@ -408,7 +447,7 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
                 st.markdown(
                     f"<span title='{hover_text}' style='cursor:help'>"
                     f"<span style='color:{dot_color}'>●</span> "
-                    f"**{m.display_name}** [\u2197]({m.model_url})  \n"
+                    f"**{m.display_name}**  \n"
                     f"<span style='color:gray;font-size:0.75em'>{full_path}</span>  \n"
                     f"<span style='color:gray;font-size:0.8em'>{ctx} ctx</span>"
                     f"</span>",
@@ -426,11 +465,22 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
         )
         updated = st.session_state.get("live_updated")
         if updated:
-            st.caption(f"Last refresh: {updated}")
+            st.caption(f"Updated: {updated}")
+        st.caption("Refreshes pricing and context length")
+
+        # Refresh flash message
+        refresh_msg = st.session_state.get("_refresh_msg", "")
+        if refresh_msg:
+            st.markdown(
+                f"<div style='background:#332b00;border:1px solid #ffc107;"
+                f"border-radius:6px;padding:6px 10px;color:#ffc107;font-size:0.75em;"
+                f"margin-top:4px'>{refresh_msg}</div>",
+                unsafe_allow_html=True,
+            )
     else:
         updated = st.session_state.get("live_updated")
         if updated:
-            st.caption(f"Last refresh: {updated} (no API key)")
+            st.caption(f"Updated: {updated} (no API key)")
 
     live_error = st.session_state.get("live_error")
     if live_error:

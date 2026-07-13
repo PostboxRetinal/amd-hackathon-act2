@@ -6,10 +6,10 @@ models:
     display_name: "Gemma 4 E4B"
     local_model_name: "gemma-4-E4B-it"
     category: dedicated
-    model_url: ""
+    model_url: "https://app.fireworks.ai/models/fireworks/gemma-4-e4b"
     tier: cheap
     provider: local
-    model_id: http://localhost:8000/v1/chat/completions
+    model_id: gemma-4-e4b/local
     cost_per_1k_tokens: 0.0
     accuracy_score: 0.82
     context_limit: 16384

@@ -52,12 +52,15 @@ from src.tasks import TaskCategory  # noqa: E402
 #  VERSION
 # ---------------------------------------------------------------------------#
 
-from importlib.metadata import version as _pkg_version
+import tomllib
+import os
 
 try:
-    APP_VERSION = _pkg_version("wayfinder")
+    _pyproject = os.path.join(os.path.dirname(__file__), "..", "pyproject.toml")
+    with open(_pyproject, "rb") as f:
+        APP_VERSION = tomllib.load(f)["project"]["version"]
 except Exception:
-    APP_VERSION = "debug"
+    APP_VERSION = "0.5.0"
 
 # ---------------------------------------------------------------------------#
 #  Session state defaults
@@ -103,6 +106,11 @@ with st.sidebar:
     else:
         border_color = "#333"
 
+    st.markdown(
+        f"<div style='border:1px solid {border_color};border-radius:8px;padding:10px;margin-bottom:8px;'>",
+        unsafe_allow_html=True,
+    )
+
     api_key_locked = key_valid == True
     api_key = st.text_input(
         "FIREWORKS_API_KEY",
@@ -111,6 +119,8 @@ with st.sidebar:
         disabled=api_key_locked,
         help="Required for Fireworks AI models",
     )
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
     # Validate API key (only when a key is present and not yet validated)
     if api_key and st.session_state.get("api_key_validated") is None:
