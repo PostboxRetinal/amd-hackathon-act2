@@ -117,18 +117,16 @@ def display_as_cli(result: dict, elapsed: float) -> None:
 
         st.divider()
 
-        m1, m2, m3 = st.columns(3)
-        m1.markdown("**Response Time**")
-        m2.markdown("**Tokens**")
-        m3.markdown("**Cost**")
-        st.markdown("<br>", unsafe_allow_html=True)
-        m1.markdown(f"{elapsed:.1f}s")
-        m2.markdown(f"{tokens:,}")
-        m3.markdown(f"${cost:.6f}")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Response Time", f"{elapsed:.1f}s")
+        col2.metric("Tokens", f"{tokens:,}")
+        col3.metric("Cost", f"${cost:.6f}")
 
         st.divider()
 
-        st.markdown(f"**Accuracy:** {acc_str}  ·  **Fallback:** {'yes' if fb else 'no'}")
+        st.markdown(f"**Accuracy:** {acc_str}")
+        if fb:
+            st.warning("Fallback was used — routed through a secondary model")
         st.caption(f"Completed in {elapsed:.1f}s")
 
 
@@ -152,10 +150,21 @@ def display_metrics(result: dict, elapsed: float) -> None:
 
 
 def display_response(response: str) -> None:
-    """Show the full model response in a terminal-style block."""
+    # Auto-detect language for syntax highlighting
+    if response.startswith(("def ", "import ", "class ", "from ", "print", "return")):
+        lang = "python"
+    elif response.startswith(("SELECT ", "CREATE ", "INSERT ", "UPDATE ", "DELETE ")):
+        lang = "sql"
+    elif response.startswith(("#!/", "echo ", "curl ", "grep ", "find ", "ls ")):
+        lang = "bash"
+    elif response.strip().startswith(("<", "{")):
+        lang = "json"
+    else:
+        lang = "text"
+
     st.markdown("**Response**")
     with st.container(border=True):
-        st.code(response, language="text", line_numbers=False)
+        st.code(response, language=lang, line_numbers=(lang != "text"))
 
 
 def display_model_details(result: dict) -> None:
@@ -170,7 +179,6 @@ def display_model_details(result: dict) -> None:
         col1, col2 = st.columns(2)
         with col1:
             st.markdown(f"**Name:** {model.display_name}")
-            st.markdown(f"**Tier:** {model.tier.value}")
             st.markdown(f"**Provider:** {model.provider}")
         with col2:
             st.markdown(f"**Cost / 1K tokens:** ${model.cost_per_1k_tokens}")
@@ -392,7 +400,7 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
                     f"<span title='{hover_text}' style='cursor:help'>"
                     f"<span style='color:{dot_color}'>●</span> "
                     f"**{m.display_name}**  \n"
-                    f"<span style='color:gray;font-size:0.75em'>{full_path}</span>  \n"
+                    f"<span style='color:gray;font-size:0.75em'>{full_path.replace('http://', '')}</span>  \n"
                     f"<span style='color:gray;font-size:0.8em'>{category} | {cost_str} | {ctx} ctx</span>"
                     f"</span>",
                     unsafe_allow_html=True,
@@ -448,7 +456,7 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
                     f"<span title='{hover_text}' style='cursor:help'>"
                     f"<span style='color:{dot_color}'>●</span> "
                     f"**{m.display_name}**  \n"
-                    f"<span style='color:gray;font-size:0.75em'>{full_path}</span>  \n"
+                    f"<span style='color:gray;font-size:0.75em'>{full_path.replace('http://', '')}</span>  \n"
                     f"<span style='color:gray;font-size:0.8em'>{ctx} ctx</span>"
                     f"</span>",
                     unsafe_allow_html=True,
@@ -465,22 +473,16 @@ def display_model_pool(router: Router, api_key: str | None = None) -> None:
         )
         updated = st.session_state.get("live_updated")
         if updated:
-            st.caption(f"Updated: {updated}")
-        st.caption("Refreshes pricing and context length")
-
-        # Refresh flash message
-        refresh_msg = st.session_state.get("_refresh_msg", "")
-        if refresh_msg:
             st.markdown(
-                f"<div style='background:#332b00;border:1px solid #ffc107;"
-                f"border-radius:6px;padding:6px 10px;color:#ffc107;font-size:0.75em;"
-                f"margin-top:4px'>{refresh_msg}</div>",
+                "<span style='color:#ffc107;font-size:0.8em'>"
+                "\u25c9 Last refresh: " + updated + "</span>",
                 unsafe_allow_html=True,
             )
+        st.caption("Refreshes pricing and context length")
     else:
         updated = st.session_state.get("live_updated")
         if updated:
-            st.caption(f"Updated: {updated} (no API key)")
+            st.caption(f"Last refresh: {updated} (no API key)")
 
     live_error = st.session_state.get("live_error")
     if live_error:

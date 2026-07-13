@@ -5,7 +5,7 @@ import socket
 import subprocess
 
 from src.evaluator import evaluate_response
-from src.models import Model, ModelTier
+from src.models import Model
 from src.tasks import TaskCategory, classify_task
 
 # Per-category max_tokens — smaller for concise tasks, larger for code/reasoning.
@@ -324,13 +324,10 @@ class Router:
         return len(text) // 4
 
     @staticmethod
-    def _pick(tier: ModelTier) -> Model:
+    def _pick_first() -> Model:
         from src.models import MODEL_CATALOG
 
-        for m in MODEL_CATALOG:
-            if m.tier == tier:
-                return m
-        raise ValueError(f"No model for tier {tier}")
+        return MODEL_CATALOG[0]
 
     @staticmethod
     def _get_model_by_name(name: str) -> Model:

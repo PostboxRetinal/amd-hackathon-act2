@@ -1,6 +1,6 @@
 [project]
 name = "wayfinder"
-version = "0.5.6b"
+version = "0.6.0"
 description = "Hybrid Token-Efficient Routing Agent"
 requires-python = ">=3.11"
 dependencies = [
@@ -9,6 +9,20 @@ dependencies = [
 
 [project.optional-dependencies]
 web = ["streamlit>=1.40.0"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+]
+pptx = [
+    "python-pptx>=0.6.21",
+]
+
+[project.scripts]
+qa = "scripts._qa_cli:main"
+dev = "scripts._dev_cli:main"
+wayfinder = "src.__main__:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -43,14 +57,3 @@ testpaths = ["tests"]
 [tool.coverage.run]
 omit = ["src/__main__.py"]
 
-[dependency-groups]
-dev = [
-    "python-pptx>=1.0.2",
-    "pytest>=9.1.1",
-    "pytest-cov>=7.1.0",
-]
-
-[project.scripts]
-qa = "scripts._qa_cli:main"
-dev = "scripts._dev_cli:main"
-wayfinder = "src.__main__:main"

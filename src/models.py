@@ -2,29 +2,13 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from enum import Enum
 
 import yaml
-
-
-class ModelTier(Enum):
-    CHEAP = "cheap"
-    FAST = "fast"
-    STANDARD = "standard"
-    PREMIUM = "premium"
-
-    @classmethod
-    def from_str(cls, s: str) -> ModelTier:
-        for t in cls:
-            if t.value == s:
-                return t
-        return cls.FAST
 
 
 @dataclass
 class Model:
     name: str
-    tier: ModelTier
     provider: str
     model_id: str
     cost_per_1k_tokens: float
@@ -39,7 +23,6 @@ class Model:
     def from_dict(cls, d: dict) -> Model:
         return cls(
             name=d["name"],
-            tier=ModelTier.from_str(d["tier"]),
             provider=d["provider"],
             model_id=d["model_id"],
             cost_per_1k_tokens=d["cost_per_1k_tokens"],
@@ -75,7 +58,3 @@ def get_model(name: str) -> Model:
         if m.name == name:
             return m
     raise ValueError(f"Model '{name}' not found in catalog")
-
-
-def get_models_by_tier(tier: ModelTier) -> list[Model]:
-    return [m for m in MODEL_CATALOG if m.tier == tier]

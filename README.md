@@ -6,7 +6,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/tests-45%20passed-brightgreen" />
   <img src="https://img.shields.io/badge/coverage-77%25-green" />
-  <img src="https://img.shields.io/badge/version-0.5.0-blue" />
+  <img src="https://img.shields.io/badge/version-0.5.6b-blue" />
   <img src="https://img.shields.io/badge/Gemma%20Prize-Eligible-gold" />
 </p>
 
@@ -16,7 +16,7 @@
 
 - **[Task-Aware Routing]** Classifies prompts into 9 categories (MATH, CODE, REASONING, FACTOID, CLASSIFICATION, SUMMARIZATION, EXTRACTION, CREATIVE, UNKNOWN) and routes to the optimal model per task.
 - **[Token Efficient]** Cheapest model first with automatic fallback through tiers. Gemma 4 26B A4B IT uses 0 Fireworks tokens.
-- **[100% Accuracy]** 14/14 benchmark prompts correct at $0.002 total cost.
+- **[100% Accuracy]** 14/14 benchmark prompts correct at $0.002 total cost. 45 tests with 77% code coverage and pre-commit QA pipeline.
 - **[Live Pricing]** Real-time model pricing and context length from the Fireworks API via the sidebar Refresh button. Colored status cards with UP/SETUP/DOWN indicators and a LIVE badge when fresh data is loaded.
 - **[Streamlit UI]** Full web interface (v0.5.0 UI overhaul) with CLI-style output, clickable query history, dark mode, grouped Model Pool sidebar, animated routing progress bar, live Fireworks pricing, and per-model color coding.
 - **[Dockerized]** Podman/Docker container with entrypoint passthrough. Separate Dockerfile.web for Streamlit UI. uv-based dependency management.
@@ -29,16 +29,16 @@ Eligible for the **$1,000 Gemma Prize** — requires active Gemma 4 dedicated de
 
 ### Gemma Prize Eligibility
 
-- **Gemma 4 26B A4B IT** was served via a dedicated Fireworks deployment (0 Fireworks tokens while active)
-- **Dedicated Gemma 4 26B** deployment is available on Fireworks (requires activation via dashboard)
-- To qualify, verify the local server is running:
+- **Gemma 4 E4B (7.5B, Q4_K_M) (huggingface)** was benchamrked and served via llama.cpp over AMD jupyter instance ($0 while active) (check [fastfetch screenshot](/.github/assets/fastfetch.png))
+- **Gemma 4 26B A4B IT** benchmarked and served via Fireworks infrastructure (required manual replica activation) [and almost exhausted the $50 hackathon budget](./github/assets/gemma4_fireworks.png)
+- To verify the local server is running: (needs manual llama.cpp/vLLM deploy)
   ```bash
   curl http://localhost:8000/v1/chat/completions -d '{"model":"gemma-4-26b-a4b-it","messages":[{"role":"user","content":"Hello"}],"max_tokens":16}'
   ```
 
 ## Built With
 
-![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&style=for-the-badge)
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&style=for-the-badge)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.59-FF4B4B?logo=streamlit&style=for-the-badge)
 ![Fireworks AI](https://img.shields.io/badge/Fireworks_AI-API-orange?style=for-the-badge)
 ![Podman](https://img.shields.io/badge/Podman-Container-892CA0?logo=podman&style=for-the-badge)
@@ -59,9 +59,10 @@ flowchart TD
     end
 
     subgraph Available for Deployment
-        G26B[Gemma 4 26B A4B IT<br/>Fireworks Dedicated]
-        G31B[Gemma 4 31B IT<br/>Fireworks Dedicated]
-        G31BNV[Gemma 4 31B IT NVFP4<br/>Fireworks Dedicated]
+        G26B[Gemma 4 26B A4B IT<br/>Fireworks tested on-demand deploy]
+        G31B[Gemma 4 31B IT<br/>Fireworks on-demand deploy]
+        G31BNV[Gemma 4 31B IT NVFP4<br/>Fireworks on-demand deploy]
+        GE4B[Gemma 4 E4B<br/>ROCm / llama.cpp hosted on AMD jupyter notebook]
     end
 
     Selector --> DS
@@ -69,6 +70,7 @@ flowchart TD
     Selector --> G26B
     Selector -.-> G31B
     Selector -.-> G31BNV
+    Selector -.-> GE4B
 
     DS --> Evaluator[Response Evaluator]
     GLM --> Evaluator
@@ -83,16 +85,9 @@ flowchart TD
     Response --> History[Clickable History]
 ```
 
-## Screenshots
-
-![Wayfinder Web UI](.github/assets/wayfinder-ui.png)
-*Wayfinder Streamlit interface showing CLI-style routing output and Model Pool sidebar.*
-
-> Screenshots will be added after deployment. Run `uv run streamlit run app/main.py` to see the live UI.
-
 ## Tech Stack
 
-- **Language:** Python 3.13
+- **Language:** Python 3.11+
 - **Package Manager:** uv
 - **Cloud Inference:** Fireworks AI
 - **Local Inference:** llama.cpp (AMD ROCm)
@@ -100,25 +95,13 @@ flowchart TD
 
 ## Model Catalog
 
-| Model | Provider | Tier | Cost/1K |
+| Model | Provider | Instance | Cost/1K |
 |-------|----------|------|---------|
-| Gemma 4 26B A4B IT (local) | llama.cpp (local) | cheap | $0.00 |
-| Gemma 4 26B A4B | Fireworks (deploy) | standard | $0.0005 |
-| Gemma 4 31B | Fireworks (serverless) | premium | $0.0010 |
-| Gemma 4 31B NVFP4 | Fireworks (serverless) | standard | $0.0020 |
-| DeepSeek V4 Pro | Fireworks (serverless) | standard | $0.0015 |
-| GLM 5.2 | Fireworks (serverless) | premium | $0.0014 |
-
-## Model Requirements
-
-Some models require additional setup:
-
-| Model | Requirement | Cost |
-|---|---|---|
-| `gemma-4-26b-a4b-it` | dedicated Fireworks deployment | 0 FW tokens (active deploy) |
-| `gemma-4-26b` (dedicated) | Fireworks deploy active (dashboard) | billed per token (see catalog) |
-| `gemma-4-31b` (dedicated) | Fireworks deploy active (dashboard) | billed per token (see catalog) |
-| `gemma-4-31b-it-nvfp4` | NVIDIA NVFP4 4-bit variant, Fireworks serverless | billed per token (see catalog) |
+| Gemma 4 E4B (7.5B, Q4_K_M) (huggingface) | llama.cpp (AMD jupyter notebook)  | locally tested | $0.00 |
+| Gemma 4 26B A4B | Fireworks (deploy) | deployed on demand | $0.00 ($28/h) exhausted almost the given $50|
+| Gemma 4 31B | Fireworks (serverless) | needs deployment | $0.0010 |
+| DeepSeek V4 Pro | Fireworks (serverless) | serverless | $0.0015 |
+| GLM 5.2 | Fireworks (serverless) | serverless | $0.0014 |
 
 **Dedicated deployments** must be activated via the Fireworks dashboard. When paused (0 replicas), the router automatically falls back to serverless models (deepseek-v4-pro, glm-5p2).
 
@@ -134,7 +117,7 @@ python3 -m llama_cpp.server \
 
 ### Prerequisites
 
-- Python 3.13
+- Python 3.11+
 - [uv](https://docs.astral.sh/uv/) package manager
 - Fireworks AI API key
 - (Optional) AMD GPU with ROCm + llama.cpp for local inference
@@ -145,12 +128,12 @@ python3 -m llama_cpp.server \
 # Clone the repo
 git clone <repo-url> && cd amd-hackathon-act2
 
-# Create virtual environment with Python 3.13
-uv venv -p 3.13
+# Create virtual environment with Python 3.11+
+uv venv -p 3.11
 source .venv/bin/activate
 
 # Install dependencies
-uv sync
+uv sync --dev 
 
 # Set your API key
 export FIREWORKS_API_KEY="fw_..."
@@ -217,7 +200,7 @@ uv run python3 -m pytest tests/ -v
 | Metric | Value |
 |---|---|
 | Total prompts | 14 |
-| Models used | 6 (gemma-4-26b-a4b-it, gemma-4-26b, gemma-4-31b, gemma-4-31b-it-nvfp4, deepseek-v4-pro, glm-5p2) |
+| Models used | 5 (gemma-4-26b-a4b-it, gemma-4-26b, gemma-4-31b, deepseek-v4-pro, glm-5p2) |
 | Gemma 4 26B coverage | **9/14 prompts** (eligible for Gemma Prize) |
 | Total tokens | 3,224 |
 | Total cost | **$0.002111** |

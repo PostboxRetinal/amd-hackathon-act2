@@ -1449,7 +1449,7 @@ wheels = [
 
 [[package]]
 name = "wayfinder"
-version = "0.5.6b0"
+version = "0.6.0"
 source = { editable = "." }
 dependencies = [
     { name = "pyyaml" },
@@ -1464,6 +1464,8 @@ web = [
 dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
+]
+pptx = [
     { name = "python-pptx" },
 ]
 
@@ -1478,8 +1480,8 @@ provides-extras = ["web"]
 dev = [
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
-    { name = "python-pptx", specifier = ">=1.0.2" },
 ]
+pptx = [{ name = "python-pptx", specifier = ">=0.6.21" }]
 
 [[package]]
 name = "websockets"

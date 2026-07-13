@@ -106,11 +106,6 @@ with st.sidebar:
     else:
         border_color = "#333"
 
-    st.markdown(
-        f"<div style='border:1px solid {border_color};border-radius:8px;padding:10px;margin-bottom:8px;'>",
-        unsafe_allow_html=True,
-    )
-
     api_key_locked = key_valid == True
     api_key = st.text_input(
         "FIREWORKS_API_KEY",
@@ -119,8 +114,6 @@ with st.sidebar:
         disabled=api_key_locked,
         help="Required for Fireworks AI models",
     )
-
-    st.markdown("</div>", unsafe_allow_html=True)
 
     # Validate API key (only when a key is present and not yet validated)
     if api_key and st.session_state.get("api_key_validated") is None:
@@ -213,7 +206,10 @@ with st.sidebar:
 
 st.title("Wayfinder")
 st.markdown(
-    "**Hybrid Token-Efficient Routing Agent** | Task-aware model selection across Gemma 4, DeepSeek V4 Pro, and GLM 5.2. NO-AIslop, straight to the point."
+    "**Hybrid Token-Efficient Routing Agent** | Task-aware model selection across Gemma 4, DeepSeek V4 Pro, and GLM 5.2."
+)
+st.markdown(
+    "NO AI-slop, straight to the 🔝 point "
 )
 
 # Apply dynamic theme
@@ -339,7 +335,7 @@ if result is not None:
 
 st.divider()
 st.caption(
-    f"Wayfinder v{APP_VERSION} -- AMD Hackathon ACT II Track 1 -- Hybrid Token-Efficient Routing Agent"
+    f"Wayfinder v{APP_VERSION} -- you just found the flag G! " "{THM_first_AMD_hackathon}"
 )
 
 # Auto-refresh history when new entries appear

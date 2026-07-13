@@ -1,6 +1,6 @@
 # Routing Agent — Tasks
 
-**Version:** v0.5.0
+**Version:** v0.5.6b
 
 ## Task List
 
@@ -357,3 +357,48 @@
 **Status:** Complete
 **Action:** Added T-060 through T-067 documenting all recent changes
 **Verification:** OpenSpec validates successfully
+
+### T-068: Python 3.11 minimum
+**Status:** Complete
+**Action:** Bumped requires-python from >=3.10 to >=3.11 for tomllib stdlib support
+**Files:** pyproject.toml
+
+### T-069: tomllib version reading
+**Status:** Complete
+**Action:** Replaced importlib.metadata.version() with tomllib to read version directly from pyproject.toml, avoiding PEP 440 normalization
+**Files:** app/main.py, src/__main__.py
+
+### T-070: python-pptx moved to dev dependencies
+**Status:** Complete
+**Action:** Moved python-pptx from core dependencies to dev dependency group (only needed for slide generation)
+**Files:** pyproject.toml
+
+### T-071: Sidebar link icons removed
+**Status:** Complete
+**Action:** Removed ↗ link icons from model name display in sidebar cards. model_id shown as plain text.
+**Files:** app/utils.py
+
+### T-072: Version bump 0.5.0 → 0.5.6b
+**Status:** Complete
+**Action:** Updated version in pyproject.toml
+**Files:** pyproject.toml
+
+### T-073: Remove invented ModelTier field
+**Status:** Complete
+**Action:** Removed tier (cheap/standard/premium) from config/models.yaml and all code references. Replaced `_pick(tier)` with `_pick_first()` in router. Deleted ModelTier enum from models.py. Removed tier display from UI.
+**Files:** config/models.yaml, src/models.py, src/router.py, app/utils.py, tests/test_config.py, tests/test_router.py
+
+### T-074: CLI output card + Response syntax highlighting
+**Status:** Complete
+**Action:** Replaced `st.markdown()` metric labels with native `st.metric()`. Removed `<br>` hack. Added conditional `st.warning()` for fallback. Auto-detects response language (Python, SQL, Bash, JSON, text) for syntax highlighting in `st.code()`.
+**Files:** app/utils.py
+
+### T-075: Test coverage to 88% (73 tests)
+**Status:** Complete
+**Action:** Rewrote test_router.py with 46 tests covering all 8 task categories, fallback chain ordering, error paths (bad JSON, timeout, OSError), cache hit/miss, and CLI main(). Rewrote test_evaluator.py with 22 tests covering all check_* AMD compliance helpers and all TaskCategory branches. Total: 73 tests, 88% coverage.
+**Files:** tests/test_router.py, tests/test_evaluator.py
+
+### T-076: Full QA pipeline green
+**Status:** Complete
+**Action:** ruff check PASS, ruff format PASS (18 files), pytest 73/73 PASS, coverage 88% (threshold 75%). All gates green.
+**Files:** tests/
